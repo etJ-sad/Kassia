@@ -1,0 +1,1266 @@
+/* Siemens Kassia WebUI Styles */
+
+:root {
+    /* Siemens Official Colors */
+    --siemens-petrol: #009999;
+    --siemens-dark-petrol: #007A7A;
+    --siemens-light-petrol: #B3DFDF;
+    --siemens-bright-petrol: #00E6DC;
+    --siemens-deep-blue: #000028;
+    --siemens-dark-blue: #001122;
+    --siemens-white: #FFFFFF;
+    --siemens-light-gray: #F5F5F5;
+    --siemens-medium-gray: #E5E5E5;
+    --siemens-dark-gray: #333333;
+    --siemens-text-primary: #1A1A1A;
+    --siemens-text-secondary: #666666;
+    --siemens-text-light: #999999;
+    
+    /* Siemens Gradients */
+    --siemens-gradient-primary: linear-gradient(135deg, var(--siemens-petrol) 0%, var(--siemens-bright-petrol) 100%);
+    --siemens-gradient-dark: linear-gradient(135deg, var(--siemens-deep-blue) 0%, var(--siemens-dark-blue) 100%);
+    --siemens-gradient-hero: linear-gradient(135deg, var(--siemens-deep-blue) 0%, rgba(0, 153, 153, 0.8) 100%);
+    
+    /* Shadows */
+    --siemens-shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.1);
+    --siemens-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.15);
+    --siemens-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.2);
+    
+    /* Border Radius */
+    --siemens-radius-sm: 4px;
+    --siemens-radius-md: 8px;
+    --siemens-radius-lg: 12px;
+    
+    /* Typography */
+    --siemens-font-family: 'Inter', 'Siemens Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: var(--siemens-font-family);
+    background-color: var(--siemens-white);
+    color: var(--siemens-text-primary);
+    line-height: 1.6;
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* Siemens Header Structure */
+.siemens-header {
+    background: var(--siemens-deep-blue);
+    position: relative;
+    z-index: 1000;
+}
+
+.header-meta {
+    background: var(--siemens-dark-blue);
+    padding: 8px 0;
+    font-size: 13px;
+}
+
+.header-meta-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: var(--siemens-white);
+}
+
+.meta-nav-link {
+    color: var(--siemens-white);
+    text-decoration: none;
+    opacity: 0.9;
+    transition: opacity 0.2s;
+    margin-right: 24px;
+}
+
+.meta-nav-link:hover {
+    opacity: 1;
+}
+
+.language-selector {
+    display: flex;
+    gap: 4px;
+}
+
+.lang-btn {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: var(--siemens-white);
+    padding: 4px 8px;
+    border-radius: var(--siemens-radius-sm);
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.lang-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.lang-btn.active {
+    background: var(--siemens-bright-petrol);
+    color: var(--siemens-deep-blue);
+    border-color: var(--siemens-bright-petrol);
+}
+
+.header-main {
+    padding: 16px 0;
+}
+
+.header-main-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.siemens-logo {
+    color: var(--siemens-white);
+    font-size: 24px;
+    font-weight: 300;
+    letter-spacing: 2px;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.logo-icon {
+    width: 32px;
+    height: 32px;
+    background: var(--siemens-gradient-primary);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--siemens-white);
+}
+
+.header-search {
+    flex: 1;
+    max-width: 400px;
+    margin: 0 40px;
+}
+
+.search-container {
+    position: relative;
+}
+
+.search-input {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: var(--siemens-radius-md);
+    padding: 12px 44px 12px 16px;
+    color: var(--siemens-white);
+    font-size: 14px;
+    transition: all 0.3s;
+}
+
+.search-input::placeholder {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.search-input:focus {
+    outline: none;
+    background: rgba(255, 255, 255, 0.15);
+    border-color: var(--siemens-bright-petrol);
+    box-shadow: 0 0 0 2px rgba(0, 230, 220, 0.2);
+}
+
+.search-btn {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: var(--siemens-white);
+    padding: 8px;
+    cursor: pointer;
+    border-radius: var(--siemens-radius-sm);
+    transition: background 0.2s;
+}
+
+.search-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.header-btn {
+    background: none;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: var(--siemens-white);
+    padding: 8px 16px;
+    border-radius: var(--siemens-radius-md);
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.header-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: var(--siemens-bright-petrol);
+}
+
+/* Navigation */
+.main-navigation {
+    background: var(--siemens-deep-blue);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.nav-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+    display: flex;
+    gap: 48px;
+}
+
+.nav-item {
+    color: var(--siemens-white);
+    text-decoration: none;
+    padding: 16px 0;
+    font-size: 15px;
+    font-weight: 400;
+    position: relative;
+    transition: opacity 0.2s;
+    border-bottom: 3px solid transparent;
+    display: flex;
+    align-items: center;
+}
+
+.nav-item:hover {
+    opacity: 0.8;
+}
+
+.nav-item.active {
+    border-bottom-color: var(--siemens-bright-petrol);
+}
+
+/* Hero Section */
+.hero-section {
+    background: var(--siemens-gradient-hero);
+    color: var(--siemens-white);
+    padding: 80px 0 120px;
+    position: relative;
+    overflow: hidden;
+}
+
+.hero-bg-pattern {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    opacity: 0.1;
+    background-image: 
+        radial-gradient(circle at 20% 30%, var(--siemens-bright-petrol) 2px, transparent 2px),
+        radial-gradient(circle at 70% 20%, var(--siemens-petrol) 1.5px, transparent 1.5px),
+        radial-gradient(circle at 40% 70%, var(--siemens-bright-petrol) 1px, transparent 1px);
+    background-size: 200px 200px, 150px 150px, 100px 100px;
+}
+
+.hero-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+    position: relative;
+    z-index: 2;
+}
+
+.hero-title {
+    font-size: 64px;
+    font-weight: 300;
+    line-height: 1.1;
+    margin-bottom: 24px;
+    letter-spacing: -1px;
+}
+
+.hero-subtitle {
+    font-size: 24px;
+    font-weight: 300;
+    margin-bottom: 32px;
+    opacity: 0.9;
+    max-width: 600px;
+    line-height: 1.4;
+}
+
+.hero-description {
+    font-size: 18px;
+    margin-bottom: 48px;
+    opacity: 0.8;
+    max-width: 700px;
+    line-height: 1.6;
+}
+
+.hero-cta {
+    background: var(--siemens-bright-petrol);
+    color: var(--siemens-deep-blue);
+    padding: 16px 32px;
+    border: none;
+    border-radius: var(--siemens-radius-md);
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    transition: all 0.3s;
+    box-shadow: var(--siemens-shadow-md);
+}
+
+.hero-cta:hover {
+    background: var(--siemens-petrol);
+    color: var(--siemens-white);
+    transform: translateY(-2px);
+    box-shadow: var(--siemens-shadow-lg);
+}
+
+/* Main Content */
+.main-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 60px 20px;
+}
+
+/* Tab Navigation */
+.tab-navigation {
+    display: flex;
+    background: var(--siemens-light-gray);
+    border-radius: var(--siemens-radius-lg);
+    padding: 8px;
+    margin-bottom: 40px;
+    overflow-x: auto;
+}
+
+.tab-btn {
+    background: none;
+    border: none;
+    padding: 16px 24px;
+    border-radius: var(--siemens-radius-md);
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s;
+    color: var(--siemens-text-secondary);
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.tab-btn:hover {
+    background: rgba(0, 153, 153, 0.1);
+    color: var(--siemens-petrol);
+}
+
+.tab-btn.active {
+    background: var(--siemens-white);
+    color: var(--siemens-petrol);
+    box-shadow: var(--siemens-shadow-sm);
+}
+
+/* Content Cards */
+.content-card {
+    background: var(--siemens-white);
+    border-radius: var(--siemens-radius-lg);
+    box-shadow: var(--siemens-shadow-sm);
+    margin-bottom: 32px;
+    overflow: hidden;
+    transition: all 0.3s;
+    border: 1px solid var(--siemens-medium-gray);
+}
+
+.content-card:hover {
+    box-shadow: var(--siemens-shadow-md);
+    transform: translateY(-2px);
+}
+
+.card-header {
+    background: var(--siemens-light-gray);
+    padding: 24px 32px;
+    border-bottom: 1px solid var(--siemens-medium-gray);
+    position: relative;
+}
+
+.card-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: var(--siemens-gradient-primary);
+}
+
+.card-title {
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--siemens-deep-blue);
+    margin: 0;
+    display: flex;
+    align-items: center;
+}
+
+.card-content {
+    padding: 32px;
+}
+
+.card-description {
+    font-size: 16px;
+    line-height: 1.6;
+    color: var(--siemens-text-primary);
+    margin-bottom: 24px;
+}
+
+/* Status Indicators */
+.status-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 24px;
+    margin-bottom: 32px;
+}
+
+.status-card {
+    background: var(--siemens-white);
+    border: 1px solid var(--siemens-medium-gray);
+    border-radius: var(--siemens-radius-lg);
+    padding: 24px;
+    text-align: center;
+    transition: all 0.3s;
+    position: relative;
+    overflow: hidden;
+}
+
+.status-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--siemens-gradient-primary);
+}
+
+.status-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--siemens-shadow-md);
+    border-color: var(--siemens-petrol);
+}
+
+.status-number {
+    font-size: 48px;
+    font-weight: 300;
+    color: var(--siemens-petrol);
+    margin-bottom: 8px;
+    display: block;
+}
+
+.status-label {
+    font-size: 14px;
+    color: var(--siemens-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 500;
+}
+
+/* Form Elements */
+.form-group {
+    margin-bottom: 24px;
+}
+
+.form-label {
+    display: block;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--siemens-text-primary);
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+}
+
+.form-control {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px solid var(--siemens-medium-gray);
+    border-radius: var(--siemens-radius-md);
+    font-size: 16px;
+    transition: all 0.3s;
+    background: var(--siemens-white);
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: var(--siemens-petrol);
+    box-shadow: 0 0 0 3px rgba(0, 153, 153, 0.1);
+}
+
+.form-select {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+    background-position: right 12px center;
+    background-repeat: no-repeat;
+    background-size: 16px;
+    appearance: none;
+}
+
+/* Buttons */
+.btn {
+    padding: 12px 24px;
+    border-radius: var(--siemens-radius-md);
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.3s;
+    border: none;
+}
+
+.btn-primary {
+    background: var(--siemens-gradient-primary);
+    color: var(--siemens-white);
+    box-shadow: var(--siemens-shadow-sm);
+}
+
+.btn-primary:hover {
+    background: var(--siemens-dark-petrol);
+    transform: translateY(-2px);
+    box-shadow: var(--siemens-shadow-md);
+}
+
+.btn-secondary {
+    background: var(--siemens-white);
+    color: var(--siemens-petrol);
+    border: 2px solid var(--siemens-petrol);
+}
+
+.btn-secondary:hover {
+    background: var(--siemens-petrol);
+    color: var(--siemens-white);
+}
+
+/* Progress Bar */
+.progress-container {
+    background: var(--siemens-light-gray);
+    border-radius: 8px;
+    height: 8px;
+    overflow: hidden;
+    margin: 16px 0;
+}
+
+.progress-bar {
+    height: 100%;
+    background: var(--siemens-gradient-primary);
+    border-radius: 8px;
+    transition: width 0.6s ease;
+    position: relative;
+}
+
+.progress-bar::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+/* Asset Grid */
+.asset-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 24px;
+    margin-top: 32px;
+}
+
+.asset-item {
+    background: var(--siemens-white);
+    border: 1px solid var(--siemens-medium-gray);
+    border-radius: var(--siemens-radius-lg);
+    padding: 24px;
+    transition: all 0.3s;
+    position: relative;
+}
+
+.asset-item:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--siemens-shadow-md);
+    border-color: var(--siemens-petrol);
+}
+
+.asset-item.valid {
+    border-left: 4px solid var(--siemens-petrol);
+}
+
+.asset-item.invalid {
+    border-left: 4px solid #e74c3c;
+}
+
+.asset-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--siemens-deep-blue);
+    margin-bottom: 8px;
+}
+
+.asset-type {
+    font-size: 12px;
+    background: var(--siemens-light-petrol);
+    color: var(--siemens-deep-blue);
+    padding: 4px 8px;
+    border-radius: 12px;
+    margin-bottom: 12px;
+    display: inline-block;
+    font-weight: 500;
+}
+
+.asset-path {
+    font-size: 14px;
+    color: var(--siemens-text-secondary);
+    font-family: 'Courier New', monospace;
+    margin-bottom: 12px;
+    word-break: break-all;
+}
+
+.asset-status {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.status-badge {
+    padding: 6px 12px;
+    border-radius: 16px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.status-success {
+    background: #e8f5e8;
+    color: #2e7d32;
+}
+
+.status-error {
+    background: #ffebee;
+    color: #c62828;
+}
+
+.status-warning {
+    background: #fff3cd;
+    color: #d68910;
+}
+
+.status-info {
+    background: #e3f2fd;
+    color: #1976d2;
+}
+
+/* Footer */
+.siemens-footer {
+    background: var(--siemens-deep-blue);
+    color: var(--siemens-white);
+    padding: 60px 0 30px;
+    margin-top: 80px;
+}
+
+.footer-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+.footer-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr;
+    gap: 48px;
+    margin-bottom: 40px;
+}
+
+.footer-section h3 {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 16px;
+    color: var(--siemens-bright-petrol);
+}
+
+.footer-section p {
+    line-height: 1.6;
+    opacity: 0.9;
+    margin-bottom: 16px;
+}
+
+.footer-links {
+    list-style: none;
+}
+
+.footer-links li {
+    margin-bottom: 8px;
+}
+
+.footer-links a {
+    color: var(--siemens-white);
+    text-decoration: none;
+    opacity: 0.8;
+    transition: opacity 0.2s;
+}
+
+.footer-links a:hover {
+    opacity: 1;
+    color: var(--siemens-bright-petrol);
+}
+
+.footer-bottom {
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+    padding-top: 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 14px;
+    opacity: 0.8;
+}
+
+.footer-bottom a {
+    color: var(--siemens-white);
+    text-decoration: none;
+    margin: 0 8px;
+}
+
+.footer-bottom a:hover {
+    color: var(--siemens-bright-petrol);
+}
+
+/* Connection Status */
+.connection-status {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 12px 20px;
+    border-radius: 24px;
+    font-size: 14px;
+    font-weight: 500;
+    z-index: 10000;
+    box-shadow: var(--siemens-shadow-md);
+    transition: all 0.3s;
+}
+
+.status-online {
+    background: #4caf50;
+    color: white;
+}
+
+.status-offline {
+    background: #f44336;
+    color: white;
+}
+
+/* Toast Notifications */
+.toast-container {
+    position: fixed;
+    top: 80px;
+    right: 20px;
+    z-index: 10000;
+}
+
+.toast {
+    background: var(--siemens-white);
+    border: 1px solid var(--siemens-medium-gray);
+    border-radius: var(--siemens-radius-lg);
+    box-shadow: var(--siemens-shadow-lg);
+    padding: 16px 20px;
+    margin-bottom: 12px;
+    min-width: 320px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+.toast.success {
+    border-left: 4px solid #4caf50;
+}
+
+.toast.error {
+    border-left: 4px solid #f44336;
+}
+
+.toast-close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+    margin-left: auto;
+    opacity: 0.7;
+}
+
+.toast-close:hover {
+    opacity: 1;
+}
+
+/* Loading Spinner */
+.loading-spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--siemens-medium-gray);
+    border-top: 2px solid var(--siemens-petrol);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Tab Content */
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+/* Job Items */
+.job-item {
+    background: var(--siemens-white);
+    border: 1px solid var(--siemens-medium-gray);
+    border-radius: var(--siemens-radius-lg);
+    padding: 20px;
+    margin-bottom: 16px;
+    transition: all 0.3s;
+}
+
+.job-item:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--siemens-shadow-md);
+    border-color: var(--siemens-petrol);
+}
+
+.job-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 12px;
+}
+
+.job-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--siemens-deep-blue);
+    margin: 0;
+}
+
+.job-id {
+    font-size: 12px;
+    color: var(--siemens-text-light);
+    font-family: 'Courier New', monospace;
+}
+
+.job-meta {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 16px;
+    margin-bottom: 16px;
+    font-size: 14px;
+}
+
+.job-meta-item {
+    display: flex;
+    flex-direction: column;
+}
+
+.job-meta-label {
+    color: var(--siemens-text-secondary);
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+}
+
+.job-meta-value {
+    color: var(--siemens-text-primary);
+    font-weight: 500;
+}
+
+.job-progress {
+    margin-bottom: 16px;
+}
+
+.job-progress-text {
+    display: flex;
+    justify-content: space-between;
+    font-size: 14px;
+    margin-bottom: 8px;
+}
+
+.job-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+}
+
+.job-actions .btn {
+    padding: 8px 16px;
+    font-size: 14px;
+}
+
+/* Asset List */
+.asset-list {
+    display: grid;
+    gap: 16px;
+}
+
+.asset-section {
+    background: var(--siemens-light-gray);
+    border-radius: var(--siemens-radius-lg);
+    padding: 24px;
+    margin-bottom: 24px;
+}
+
+.asset-section-title {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--siemens-deep-blue);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.asset-section-count {
+    background: var(--siemens-petrol);
+    color: var(--siemens-white);
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 8px;
+    border-radius: 12px;
+    min-width: 24px;
+    text-align: center;
+}
+
+.asset-section-empty {
+    text-align: center;
+    color: var(--siemens-text-secondary);
+    padding: 40px;
+    font-style: italic;
+}
+
+/* File Type Icons */
+.file-icon {
+    width: 24px;
+    height: 24px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: bold;
+    color: white;
+    margin-right: 10px;
+    flex-shrink: 0;
+}
+
+.file-icon.wim { background: #3498db; }
+.file-icon.inf { background: #e67e22; }
+.file-icon.msu { background: #9b59b6; }
+.file-icon.exe { background: #e74c3c; }
+.file-icon.appx { background: #1abc9c; }
+.file-icon.ps1 { background: #2c3e50; }
+.file-icon.py { background: #f39c12; }
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .header-main-content {
+        flex-direction: column;
+        gap: 20px;
+        text-align: center;
+    }
+    
+    .header-search {
+        max-width: 100%;
+        margin: 0;
+    }
+    
+    .nav-content {
+        flex-direction: column;
+        gap: 0;
+        overflow-x: auto;
+        flex-direction: row;
+    }
+    
+    .nav-item {
+        padding: 12px 16px;
+        white-space: nowrap;
+        min-width: max-content;
+    }
+    
+    .hero-title {
+        font-size: 42px;
+    }
+    
+    .hero-subtitle {
+        font-size: 20px;
+    }
+    
+    .tab-navigation {
+        overflow-x: auto;
+        padding: 4px;
+    }
+    
+    .tab-btn {
+        flex-shrink: 0;
+        padding: 12px 20px;
+    }
+    
+    .status-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+    }
+    
+    .asset-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .footer-grid {
+        grid-template-columns: 1fr;
+        gap: 32px;
+    }
+    
+    .footer-bottom {
+        flex-direction: column;
+        gap: 16px;
+        text-align: center;
+    }
+    
+    .card-content {
+        padding: 20px;
+    }
+    
+    .card-header {
+        padding: 20px;
+    }
+    
+    .main-content {
+        padding: 40px 16px;
+    }
+    
+    .connection-status {
+        top: 10px;
+        right: 10px;
+        padding: 8px 16px;
+        font-size: 12px;
+    }
+}
+
+@media (max-width: 480px) {
+    .hero-title {
+        font-size: 32px;
+    }
+    
+    .hero-subtitle {
+        font-size: 18px;
+    }
+    
+    .hero-description {
+        font-size: 16px;
+    }
+    
+    .status-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .status-number {
+        font-size: 36px;
+    }
+    
+    .job-meta {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+    
+    .job-actions {
+        flex-direction: column;
+    }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --siemens-white: #1a1a1a;
+        --siemens-light-gray: #2d3748;
+        --siemens-medium-gray: #4a5568;
+        --siemens-text-primary: #e2e8f0;
+        --siemens-text-secondary: #a0aec0;
+        --siemens-text-light: #718096;
+    }
+    
+    body {
+        background-color: #1a1a1a;
+        color: #e2e8f0;
+    }
+    
+    .content-card {
+        background: #2d3748;
+        border-color: #4a5568;
+    }
+    
+    .status-card {
+        background: #2d3748;
+        border-color: #4a5568;
+    }
+    
+    .asset-item {
+        background: #2d3748;
+        border-color: #4a5568;
+    }
+    
+    .job-item {
+        background: #2d3748;
+        border-color: #4a5568;
+    }
+    
+    .form-control, .form-select {
+        background: #2d3748;
+        border-color: #4a5568;
+        color: #e2e8f0;
+    }
+    
+    .form-control:focus, .form-select:focus {
+        background: #2d3748;
+        border-color: var(--siemens-petrol);
+        color: #e2e8f0;
+    }
+    
+    .toast {
+        background: #2d3748;
+        border-color: #4a5568;
+        color: #e2e8f0;
+    }
+}
+
+/* Print styles */
+@media print {
+    .connection-status,
+    .toast-container,
+    .header-actions,
+    .tab-navigation,
+    .btn {
+        display: none !important;
+    }
+    
+    .siemens-header {
+        position: static;
+    }
+    
+    .hero-section {
+        padding: 40px 0;
+        background: var(--siemens-deep-blue) !important;
+        -webkit-print-color-adjust: exact;
+    }
+    
+    .main-content {
+        padding: 20px 0;
+    }
+    
+    .content-card {
+        break-inside: avoid;
+        box-shadow: none;
+        border: 1px solid #ddd;
+        margin-bottom: 20px;
+    }
+    
+    .siemens-footer {
+        margin-top: 40px;
+    }
+}
+
+/* Focus styles for accessibility */
+.btn:focus,
+.form-control:focus,
+.nav-item:focus,
+.tab-btn:focus {
+    outline: 2px solid var(--siemens-bright-petrol);
+    outline-offset: 2px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    :root {
+        --siemens-shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.3);
+        --siemens-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+        --siemens-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
+    }
+    
+    .content-card,
+    .status-card,
+    .asset-item,
+    .job-item {
+        border-width: 2px;
+    }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+    
+    .progress-bar::after {
+        animation: none;
+    }
+    
+    .loading-spinner {
+        animation: none;
+        border: 2px solid var(--siemens-petrol);
+    }
+}

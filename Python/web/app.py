@@ -1,5 +1,7 @@
+# web/app.py - Korrigierte Version mit Asset Provider Fix
+
 """
-Kassia Web Interface - FastAPI Backend
+Kassia Web Interface - FastAPI Backend (Fixed)
 Modern web interface for Windows Image Preparation System
 """
 
@@ -153,16 +155,26 @@ async def list_devices() -> List[DeviceInfo]:
 
 @app.get("/api/assets/{device}/{os_id}")
 async def get_assets(device: str, os_id: int) -> Dict[str, Any]:
-    """Get assets for specific device and OS."""
+    """Get assets for specific device and OS - FIXED VERSION."""
     try:
         # Load configuration
         kassia_config = ConfigLoader.create_kassia_config(device, os_id)
         
-        # Discover assets
+        # FIXED: Create asset provider with proper build config integration
         assets_path = Path("assets")
-        provider = LocalAssetProvider(assets_path)
         
-        # Get SBI
+        # Pass build config to asset provider for proper path resolution
+        build_config_dict = {
+            'driverRoot': kassia_config.build.driverRoot,
+            'updateRoot': kassia_config.build.updateRoot,
+            'sbiRoot': kassia_config.build.sbiRoot,
+            'yunonaPath': kassia_config.build.yunonaPath,
+            'osWimMap': kassia_config.build.osWimMap
+        }
+        
+        provider = LocalAssetProvider(assets_path, build_config=build_config_dict)
+        
+        # Get SBI with proper path resolution
         sbi_asset = await provider.get_sbi(os_id)
         sbi_info = None
         if sbi_asset:
@@ -221,7 +233,7 @@ async def get_assets(device: str, os_id: int) -> Dict[str, Any]:
             "updates": [u.dict() for u in update_list],
             "yunona_scripts": [s.dict() for s in script_list],
             "driver_families_required": len(kassia_config.get_driver_families()),
-            "wim_path": kassia_config.get_wim_path()
+            "wim_path": str(kassia_config.get_wim_path()) if kassia_config.get_wim_path() else None
         }
         
     except Exception as e:
@@ -292,7 +304,7 @@ async def websocket_endpoint(websocket: WebSocket):
 
 # Background job execution
 async def execute_build_job(job_id: str, device: str, os_id: int, skip_drivers: bool, skip_updates: bool):
-    """Execute build job in background."""
+    """Execute build job in background - FIXED VERSION."""
     try:
         # Update job status
         job_status.update_job(
@@ -314,9 +326,17 @@ async def execute_build_job(job_id: str, device: str, os_id: int, skip_drivers: 
             progress=20
         )
         
-        # Discover assets
+        # FIXED: Create asset provider with proper build config
         assets_path = Path("assets")
-        provider = LocalAssetProvider(assets_path)
+        build_config_dict = {
+            'driverRoot': kassia_config.build.driverRoot,
+            'updateRoot': kassia_config.build.updateRoot,
+            'sbiRoot': kassia_config.build.sbiRoot,
+            'yunonaPath': kassia_config.build.yunonaPath,
+            'osWimMap': kassia_config.build.osWimMap
+        }
+        
+        provider = LocalAssetProvider(assets_path, build_config=build_config_dict)
         
         sbi_asset = await provider.get_sbi(os_id)
         drivers = await provider.get_drivers(device, os_id)

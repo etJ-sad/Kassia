@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" dir="ltr">
+<html lang="de" dir="ltr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -22,7 +22,7 @@
 <body>
     <!-- Connection Status -->
     <div id="connectionStatus" class="connection-status status-offline">
-        <span>🔌 Connecting...</span>
+        <span>🔌 Verbindung wird hergestellt...</span>
     </div>
 
     <!-- Toast Container -->
@@ -40,7 +40,7 @@
                 
                 <div class="header-search">
                     <div class="search-container">
-                        <input type="text" class="search-input" placeholder="Search Kassia documentation..." id="headerSearch">
+                        <input type="text" class="search-input" placeholder="Kassia Dokumentation durchsuchen..." id="headerSearch">
                         <button class="search-btn" onclick="performSearch()">
                             <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                                 <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/>
@@ -51,8 +51,8 @@
 
                 <div class="header-actions">
                     <div class="language-selector">
-                        <button class="lang-btn" onclick="switchLanguage('de')">DE</button>
-                        <button class="lang-btn active" onclick="switchLanguage('en')">EN</button>
+                        <button class="lang-btn active" onclick="switchLanguage('de')">DE</button>
+                        <button class="lang-btn" onclick="switchLanguage('en')">EN</button>
                         <button class="lang-btn" onclick="switchLanguage('ru')">RU</button>
                         <button class="lang-btn" onclick="switchLanguage('cs')">CS</button>
                     </div>
@@ -60,13 +60,13 @@
                         <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                             <path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm2-3a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm4 8c0 1-1 1-1 1H3s-1 0-1-1 1-4 6-4 6 3 6 4zm-1-.004c-.001-.246-.154-.986-.832-1.664C11.516 10.68 10.289 10 8 10c-2.29 0-3.516.68-4.168 1.332-.678.678-.83 1.418-.832 1.664h10z"/>
                         </svg>
-                        Login
+                        Anmelden
                     </a>
                     <a href="#" class="header-btn">
                         <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                             <path d="M3.654 1.328a.678.678 0 0 0-1.015-.063L1.605 2.3c-.483.484-.661 1.169-.45 1.77a17.568 17.568 0 0 0 4.168 6.608 17.569 17.569 0 0 0 6.608 4.168c.601.211 1.286.033 1.77-.45l1.034-1.034a.678.678 0 0 0-.063-1.015l-2.307-1.794a.678.678 0 0 0-.58-.122L9.98 10.12s-.256.098-.97-.615c-.715-.712-.615-.97-.615-.97l-.787-1.804a.678.678 0 0 0-.122-.58L5.692 3.844a.678.678 0 0 0-.122-.58l-1.916-1.936z"/>
                         </svg>
-                        Contact
+                        Kontakt
                     </a>
                 </div>
             </div>
@@ -86,7 +86,7 @@
                         <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
                         <path d="m8.93 6.588-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533L8.93 6.588zM9 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0z"/>
                     </svg>
-                    New Build
+                    Neuer Build
                 </a>
                 <a href="#assets" class="nav-item" onclick="switchTab('assets')">
                     <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16" style="margin-right: 8px;">
@@ -99,7 +99,7 @@
                     <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16" style="margin-right: 8px;">
                         <path d="M7 2.5a.5.5 0 0 1 .5-.5h4a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-4a.5.5 0 0 1-.5-.5v-1zM3.5 0A1.5 1.5 0 0 0 2 1.5V15a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V1.5A1.5 1.5 0 0 0 12.5 0h-9zM3 1.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 .5.5V15H3V1.5z"/>
                     </svg>
-                    Jobs
+                    Aufträge
                 </a>
             </div>
         </div>
@@ -112,14 +112,14 @@
             <h1 class="hero-title">Kassia</h1>
             <div class="hero-subtitle">Windows Image Preparation System</div>
             <div class="hero-description">
-                Advanced automation platform for Windows image customization and deployment. 
-                Built with enterprise-grade reliability and Siemens engineering excellence.
+                Fortschrittliche Automatisierungsplattform für Windows-Image-Anpassung und -Bereitstellung. 
+                Entwickelt mit Siemens Engineering-Exzellenz und Enterprise-Grade-Zuverlässigkeit.
             </div>
             <a href="#build" class="hero-cta" onclick="switchTab('build')">
                 <svg width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
                     <path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"/>
                 </svg>
-                Start Building
+                Build starten
             </a>
         </div>
     </section>
@@ -139,7 +139,7 @@
                     <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
                     <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/>
                 </svg>
-                New Build
+                Neuer Build
             </button>
             <button class="tab-btn" onclick="switchTab('assets')" data-tab="assets">
                 <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
@@ -151,7 +151,7 @@
                 <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                     <path d="M7 2.5a.5.5 0 0 1 .5-.5h4a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-4a.5.5 0 0 1-.5-.5v-1zM3.5 0A1.5 1.5 0 0 0 2 1.5V15a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V1.5A1.5 1.5 0 0 0 12.5 0h-9z"/>
                 </svg>
-                Jobs
+                Aufträge
             </button>
         </div>
 
@@ -160,25 +160,25 @@
             <!-- System Status -->
             <div class="content-card">
                 <div class="card-header">
-                    <h2 class="card-title">System Overview</h2>
+                    <h2 class="card-title">Systemübersicht</h2>
                 </div>
                 <div class="card-content">
                     <div class="status-grid">
                         <div class="status-card">
                             <span class="status-number" id="totalJobs">0</span>
-                            <div class="status-label">Total Jobs</div>
+                            <div class="status-label">Gesamt Aufträge</div>
                         </div>
                         <div class="status-card">
                             <span class="status-number" id="runningJobs">0</span>
-                            <div class="status-label">Running</div>
+                            <div class="status-label">Läuft</div>
                         </div>
                         <div class="status-card">
                             <span class="status-number" id="completedJobs">0</span>
-                            <div class="status-label">Completed</div>
+                            <div class="status-label">Abgeschlossen</div>
                         </div>
                         <div class="status-card">
                             <span class="status-number" id="failedJobs">0</span>
-                            <div class="status-label">Failed</div>
+                            <div class="status-label">Fehlgeschlagen</div>
                         </div>
                     </div>
                 </div>
@@ -189,17 +189,17 @@
                 <div class="card-header">
                     <h2 class="card-title">
                         <div class="loading-spinner" style="margin-right: 12px;"></div>
-                        Active Build
+                        Aktiver Build
                     </h2>
                 </div>
                 <div class="card-content">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-                        <h3 id="activeJobTitle">Building...</h3>
-                        <span class="status-badge status-info" id="activeJobStatus">Running</span>
+                        <h3 id="activeJobTitle">Build läuft...</h3>
+                        <span class="status-badge status-info" id="activeJobStatus">Läuft</span>
                     </div>
                     <div style="margin-bottom: 16px;">
                         <div style="display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 8px;">
-                            <span id="activeJobStep">Step 1/9: Initializing</span>
+                            <span id="activeJobStep">Schritt 1/9: Initialisierung</span>
                             <span id="activeJobProgress">0%</span>
                         </div>
                         <div class="progress-container">
@@ -207,7 +207,7 @@
                         </div>
                     </div>
                     <div style="background: var(--siemens-deep-blue); color: var(--siemens-bright-petrol); padding: 20px; border-radius: var(--siemens-radius-md); font-family: 'Courier New', monospace; font-size: 14px; max-height: 300px; overflow-y: auto;" id="activeJobLogs">
-                        <div>Waiting for job updates...</div>
+                        <div>Warten auf Auftragsupdates...</div>
                     </div>
                 </div>
             </div>
@@ -215,12 +215,95 @@
             <!-- Recent Jobs -->
             <div class="content-card">
                 <div class="card-header">
-                    <h2 class="card-title">Recent Activity</h2>
+                    <h2 class="card-title">Letzte Aktivitäten</h2>
                 </div>
                 <div class="card-content">
                     <div id="recentJobsList">
                         <p style="text-align: center; color: var(--siemens-text-secondary); padding: 40px;">
-                            No jobs yet. Start a new build to see activity here.
+                            Wählen Sie Gerät und OS, um verfügbare Assets anzuzeigen
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Jobs Tab -->
+        <div id="jobs" class="tab-content">
+            <div class="content-card">
+                <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+                    <h2 class="card-title">Build-Aufträge</h2>
+                    <button class="btn btn-secondary" onclick="refreshJobs()">
+                        <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                            <path fill-rule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"/>
+                            <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466z"/>
+                        </svg>
+                        Aktualisieren
+                    </button>
+                </div>
+                <div class="card-content">
+                    <div id="jobsList">
+                        <p style="text-align: center; color: var(--siemens-text-secondary); padding: 40px;">
+                            Aufträge werden geladen...
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Siemens Footer -->
+    <footer class="siemens-footer">
+        <div class="footer-content">
+            <div class="footer-grid">
+                <div class="footer-section">
+                    <h3>Kassia</h3>
+                    <p>Windows Image Preparation System für Enterprise-Bereitstellung entwickelt. Gebaut mit Siemens Engineering-Exzellenz und Zuverlässigkeitsstandards.</p>
+                    <p>© 2025 Siemens AG. Alle Rechte vorbehalten.</p>
+                </div>
+                <div class="footer-section">
+                    <h3>Dokumentation</h3>
+                    <ul class="footer-links">
+                        <li><a href="#">Erste Schritte</a></li>
+                        <li><a href="#">API-Referenz</a></li>
+                        <li><a href="#">Konfigurationshandbuch</a></li>
+                        <li><a href="#">Fehlerbehebung</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h3>Ressourcen</h3>
+                    <ul class="footer-links">
+                        <li><a href="#">Downloads</a></li>
+                        <li><a href="#">Versionshinweise</a></li>
+                        <li><a href="#">Beispielkonfigurationen</a></li>
+                        <li><a href="#">Video-Tutorials</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h3>Support</h3>
+                    <ul class="footer-links">
+                        <li><a href="#">Technischer Support</a></li>
+                        <li><a href="#">Community-Forum</a></li>
+                        <li><a href="#">Support kontaktieren</a></li>
+                        <li><a href="#">Feedback senden</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <div>
+                    <span>Powered by Siemens Digital Industries | </span>
+                    <a href="#">Datenschutz</a> | 
+                    <a href="#">Nutzungsbedingungen</a> | 
+                    <a href="#">Cookies</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript einbinden -->
+    <script src="/static/js/kassia-app.js"></script>
+</body>
+</html>
+                            Noch keine Aufträge. Starten Sie einen neuen Build, um hier Aktivitäten zu sehen.
                         </p>
                     </div>
                 </div>
@@ -231,7 +314,7 @@
         <div id="build" class="tab-content">
             <div class="content-card">
                 <div class="card-header">
-                    <h2 class="card-title">Start New Build</h2>
+                    <h2 class="card-title">Neuen Build starten</h2>
                 </div>
                 <div class="card-content">
                     <form id="buildForm">
@@ -240,13 +323,13 @@
                                 <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16" style="margin-right: 8px;">
                                     <path d="M6 0H2a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h4v1a4 4 0 0 0-3.5 3.97c-.5.05-1 .28-1.5.71A2 2 0 0 0 0 16a2 2 0 0 0 2-2c0-.76.75-1.31 1.66-1.32A4.009 4.009 0 0 0 7 12v1.5a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5V12a4.009 4.009 0 0 0 3.34.68C13.25 12.69 14 13.24 14 14a2 2 0 0 0 2 2 2 2 0 0 0 2-2 2 2 0 0 0-1.5-1.93c-.5-.43-1-.66-1.5-.71A4 4 0 0 0 12 9V8h4a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2h-4zM1 2a1 1 0 0 1 1-1h4v6H2a1 1 0 0 1-1-1V2z"/>
                                 </svg>
-                                Device Profile
+                                Geräteprofil
                             </label>
                             <select class="form-control form-select" id="deviceSelect" required>
-                                <option value="">Loading devices...</option>
+                                <option value="">Geräte werden geladen...</option>
                             </select>
                             <small style="color: var(--siemens-text-secondary); margin-top: 4px; display: block;">
-                                Select the target device configuration for your build
+                                Wählen Sie die Zielgerätekonfiguration für Ihren Build
                             </small>
                         </div>
 
@@ -256,13 +339,13 @@
                                     <path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zM0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8z"/>
                                     <path d="M5.5 5.5A.5.5 0 0 1 6 6v4a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v4a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v4a.5.5 0 0 0 1 0V6z"/>
                                 </svg>
-                                Operating System
+                                Betriebssystem
                             </label>
                             <select class="form-control form-select" id="osSelect" required disabled>
-                                <option value="">Select device first...</option>
+                                <option value="">Zuerst Gerät auswählen...</option>
                             </select>
                             <small style="color: var(--siemens-text-secondary); margin-top: 4px; display: block;">
-                                Choose the target Windows version for deployment
+                                Wählen Sie die Windows-Zielversion für die Bereitstellung
                             </small>
                         </div>
 
@@ -270,11 +353,11 @@
                             <div style="display: flex; gap: 24px; flex-wrap: wrap;">
                                 <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
                                     <input type="checkbox" id="skipDrivers" style="margin: 0;">
-                                    <span>Skip Driver Integration</span>
+                                    <span>Treiberintegration überspringen</span>
                                 </label>
                                 <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
                                     <input type="checkbox" id="skipUpdates" style="margin: 0;">
-                                    <span>Skip Update Integration</span>
+                                    <span>Update-Integration überspringen</span>
                                 </label>
                             </div>
                         </div>
@@ -283,7 +366,7 @@
                             <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                                 <path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/>
                             </svg>
-                            Start Build
+                            Build starten
                         </button>
                     </form>
                 </div>
@@ -292,23 +375,23 @@
             <!-- Build Preview -->
             <div class="content-card" id="buildPreview" style="display: none;">
                 <div class="card-header">
-                    <h2 class="card-title">Build Preview</h2>
+                    <h2 class="card-title">Build-Vorschau</h2>
                 </div>
                 <div class="card-content">
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 32px;">
                         <div>
-                            <h3 style="margin-bottom: 16px; color: var(--siemens-deep-blue);">Configuration</h3>
+                            <h3 style="margin-bottom: 16px; color: var(--siemens-deep-blue);">Konfiguration</h3>
                             <div style="background: var(--siemens-light-gray); padding: 20px; border-radius: var(--siemens-radius-md);">
-                                <div style="margin-bottom: 12px;"><strong>Device:</strong> <span id="previewDevice">-</span></div>
+                                <div style="margin-bottom: 12px;"><strong>Gerät:</strong> <span id="previewDevice">-</span></div>
                                 <div style="margin-bottom: 12px;"><strong>OS:</strong> <span id="previewOS">-</span></div>
-                                <div><strong>WIM Path:</strong> <span id="previewWimPath" style="font-family: monospace; font-size: 12px;">-</span></div>
+                                <div><strong>WIM-Pfad:</strong> <span id="previewWimPath" style="font-family: monospace; font-size: 12px;">-</span></div>
                             </div>
                         </div>
                         <div>
-                            <h3 style="margin-bottom: 16px; color: var(--siemens-deep-blue);">Asset Summary</h3>
+                            <h3 style="margin-bottom: 16px; color: var(--siemens-deep-blue);">Asset-Zusammenfassung</h3>
                             <div style="background: var(--siemens-light-gray); padding: 20px; border-radius: var(--siemens-radius-md);">
                                 <div style="margin-bottom: 12px;"><strong>SBI:</strong> <span id="previewSBI">-</span></div>
-                                <div style="margin-bottom: 12px;"><strong>Drivers:</strong> <span id="previewDrivers">-</span></div>
+                                <div style="margin-bottom: 12px;"><strong>Treiber:</strong> <span id="previewDrivers">-</span></div>
                                 <div><strong>Updates:</strong> <span id="previewUpdates">-</span></div>
                             </div>
                         </div>
