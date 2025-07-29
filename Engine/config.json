@@ -1,0 +1,14 @@
+{
+  "name": "Kassia",
+  "mountPoint": "${root}/Runtime/Mount",
+  "tempPath": "${root}/Runtime/Temp",
+  "exportPath": "${root}/.Output",
+  "driverRoot": "${root}/Assets/Drivers",
+  "updateRoot": "${root}/Assets/Updates",
+  "yunonaPath": "${root}/Assets/Yunona",
+  "osWimMap": {
+    "10": "${root}/SBI/w11_enterprise.wim",
+    "20": "${root}/SBI/install2.wim",
+    "21656": "${root}/SBI/w11_enterprise.wim"
+  }
+}

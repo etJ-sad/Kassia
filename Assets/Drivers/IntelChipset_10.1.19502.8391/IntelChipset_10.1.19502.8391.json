@@ -1,0 +1,36 @@
+{
+  "driverName": "Intel Chipset Device Software",
+  "driverVersion": "10.1.19502.8391",
+  "manufacturer": "Intel Corporation",
+  "downloadFileName": "IntelChipset_10.1.19502.8391.zip",
+  "installCommands": [
+	  {
+		"type": "Install",
+		"filename":	"_install.cmd"
+	  },
+	  {
+		"type": "Silent",
+		"filename":	"_silent.cmd"
+	  }
+  ],
+  "additionalFiles": [
+	  {
+		"typeId": 1,
+		"displayName": "License terms Siemens AG (EULA)",
+		"language": ["de", "en", "fr", "es", "zh"],
+		"filename":	"ReadMe_OSS_MULTILINGUAL.htm"
+	  }
+  ],
+  "typeId": 451, 
+  "description": "Driver and Software for Intel Chipset Device", 
+  "supportedDevices": [1,19951,19952],
+  "supportedOperatingSystems": [21656],
+  "driverFamilyId": 20002,
+  "order": 10, 
+  "preparedDate": "2025-02-17T12:00:00+01:00",
+  "releasedDate": "2025-02-17T12:00:00+01:00",
+  "internalPath": null,
+  "rebootRequired": true,
+  "size": null,
+  "driverType": "inf"
+}

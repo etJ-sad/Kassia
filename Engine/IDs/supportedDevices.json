@@ -1,0 +1,70 @@
+[
+  {
+    "id": 21701,
+    "name": "SIMATIC IPC BX-21A"
+  },
+  {
+    "id": 23401,
+    "name": "SIMATIC IPC BX-32A"
+  },
+  {
+    "id": 1,
+    "name": "SIMATIC IPC BX-39A"
+  },
+  {
+    "id": 23402,
+    "name": "SIMATIC IPC BX-56A"
+  },
+  {
+    "id": 23403,
+    "name": "SIMATIC IPC BX-59A"
+  },
+  {
+    "id": 21651,
+    "name": "SIMATIC IPC MD-57A"
+  },
+  {
+    "id": 21702,
+    "name": "SIMATIC IPC PX-15A"
+  },
+  {
+    "id": 23404,
+    "name": "SIMATIC IPC PX-32A"
+  },
+  {
+    "id": 19951,
+    "name": "SIMATIC IPC PX-39A"
+  },
+  {
+    "id": 19952,
+    "name": "SIMATIC IPC PX-39A PRO"
+  },
+  {
+    "id": 19953,
+    "name": "SIMATIC IPC RW-545A"
+  },
+  {
+    "id": 19954,
+    "name": "SIMATIC IPC RC-545A"
+  },
+  {
+    "id": 23405,
+    "name": "SIMATIC IPC RS-545A"
+  },
+  {
+    "id": 23406,
+    "name": "SIMATIC IPC RS-717A"
+  },
+  {
+    "id": 21751,
+    "name": "SIMATIC IPC RS-828A"
+  },
+  {
+    "id": 23407,
+    "name": "SIMATIC IPC RW-528A"
+  },
+  {
+    "id": 23408,
+    "name": "SIMATIC IPC RW-548A"
+  }
+]
