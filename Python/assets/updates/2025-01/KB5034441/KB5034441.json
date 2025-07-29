@@ -1,0 +1,16 @@
+{
+  "updateName": "2025-01 Cumulative Update for Windows 10",
+  "updateVersion": "KB5034441",
+  "updateType": "msu",
+  "downloadFileName": "windows10.0-kb5034441-x64.msu",
+  "supportedOperatingSystems": [
+    10,
+    21652
+  ],
+  "rebootRequired": true,
+  "order": 100,
+  "description": "January 2025 Security and Quality Update",
+  "downloadDate": "2025-07-29T17:32:32.562119",
+  "size": 0,
+  "manufacturer": "Microsoft Corporation"
+}

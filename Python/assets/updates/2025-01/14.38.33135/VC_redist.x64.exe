@@ -1,0 +1,9 @@
+This is a dummy EXE file for testing purposes.
+Update: Visual C++ 2022 Redistributable
+Version: 14.38.33135
+Type: exe
+
+In a real scenario, this would be the actual update file downloaded from Microsoft.
+For testing, this dummy file allows the update integration system to function.
+
+Created: 2025-07-29T17:32:32.564752

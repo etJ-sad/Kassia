@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kassia - Windows Image Preparation System</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --success-color: #27ae60;
+            --warning-color: #f39c12;
+            --danger-color: #e74c3c;
+            --dark-bg: #1a1a1a;
+            --card-bg: #2d3748;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .main-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            margin: 20px;
+            min-height: calc(100vh - 40px);
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 20px 20px 0 0;
+            text-align: center;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 2.5rem;
+            font-weight: 300;
+        }
+
+        .header p {
+            margin: 10px 0 0 0;
+            opacity: 0.9;
+            font-size: 1.1rem;
+        }
+
+        .nav-pills .nav-link {
+            background: none;
+            border: 2px solid transparent;
+            color: var(--primary-color);
+            font-weight: 500;
+            margin: 0 5px;
+            border-radius: 50px;
+            transition: all 0.3s ease;
+        }
+
+        .nav-pills .nav-link:hover {
+            background: var(--secondary-color);
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .nav-pills .nav-link.active {
+            background: var(--primary-color);
+            color: white;
+            box-shadow: 0 4px 15px rgba(44, 62, 80, 0.3);
+        }
+
+        .card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.15);
+        }
+
+        .progress {
+            height: 8px;
+            border-radius: 10px;
+            background: #f1f3f4;
+        }
+
+        .progress-bar {
+            border-radius: 10px;
+            transition: width 0.6s ease;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .status-running { background: #e3f2fd; color: #1976d2; }
+        .status-completed { background: #e8f5e8; color: #2e7d32; }
+        .status-failed { background: #ffebee; color: #c62828; }
+        .status-created { background: #f3e5f5; color: #7b1fa2; }
+
+        .asset-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            margin: 10px 0;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border-left: 4px solid var(--secondary-color);
+        }
+
+        .asset-valid { border-left-color: var(--success-color); }
+        .asset-invalid { border-left-color: var(--danger-color); }
+
+        .btn-custom {
+            border-radius: 25px;
+            padding: 12px 30px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            border: none;
+        }
+
+        .btn-primary-custom {
+            background: linear-gradient(135deg, var(--secondary-color) 0%, #5dade2 100%);
+            color: white;
+        }
+
+        .btn-primary-custom:hover {
+            background: linear-gradient(135deg, #2980b9 0%, var(--secondary-color) 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(52, 152, 219, 0.3);
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid var(--secondary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .log-container {
+            background: #1e1e1e;
+            color: #00ff00;
+            font-family: 'Courier New', monospace;
+            padding: 20px;
+            border-radius: 10px;
+            max-height: 400px;
+            overflow-y: auto;
+            font-size: 0.9rem;
+        }
+
+        .stats-card {
+            text-align: center;
+            padding: 25px;
+        }
+
+        .stats-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--secondary-color);
+        }
+
+        .stats-label {
+            color: #6c757d;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .connection-status {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            border-radius: 25px;
+            color: white;
+            font-weight: 500;
+            z-index: 1000;
+            transition: all 0.3s ease;
+        }
+
+        .connection-online { background: var(--success-color); }
+        .connection-offline { background: var(--danger-color); }
+    </style>
+</head>
+<body>
+    <!-- Connection Status -->
+    <div id="connectionStatus" class="connection-status connection-offline">
+        <i class="fas fa-wifi"></i> Connecting...
+    </div>
+
+    <div class="main-container">
+        <!-- Header -->
+        <div class="header">
+            <h1><i class="fas fa-cogs"></i> Kassia</h1>
+            <p>Windows Image Preparation System - Web Edition</p>
+        </div>
+
+        <!-- Navigation -->
+        <div class="container-fluid p-4">
+            <ul class="nav nav-pills justify-content-center mb-4" id="mainNav">
+                <li class="nav-item">
+                    <a class="nav-link active" data-bs-toggle="pill" href="#dashboard">
+                        <i class="fas fa-tachometer-alt"></i> Dashboard
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-bs-toggle="pill" href="#build">
+                        <i class="fas fa-rocket"></i> New Build
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-bs-toggle="pill" href="#assets">
+                        <i class="fas fa-folder-open"></i> Assets
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-bs-toggle="pill" href="#jobs">
+                        <i class="fas fa-list"></i> Jobs
+                    </a>
+                </li>
+            </ul>
+
+            <!-- Tab Content -->
+            <div class="tab-content">
+                <!-- Dashboard Tab -->
+                <div class="tab-pane fade show active" id="dashboard">
+                    <div class="row">
+                        <!-- Quick Stats -->
+                        <div class="col-md-3 mb-4">
+                            <div class="card stats-card">
+                                <div class="stats-number" id="totalJobs">0</div>
+                                <div class="stats-label">Total Jobs</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-4">
+                            <div class="card stats-card">
+                                <div class="stats-number" id="runningJobs">0</div>
+                                <div class="stats-label">Running</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-4">
+                            <div class="card stats-card">
+                                <div class="stats-number" id="completedJobs">0</div>
+                                <div class="stats-label">Completed</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-4">
+                            <div class="card stats-card">
+                                <div class="stats-number" id="failedJobs">0</div>
+                                <div class="stats-label">Failed</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Active Job -->
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="card" id="activeJobCard" style="display: none;">
+                                <div class="card-header">
+                                    <h5><i class="fas fa-cog fa-spin"></i> Active Build</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                                        <h6 id="activeJobTitle">Building...</h6>
+                                        <span class="status-badge status-running" id="activeJobStatus">Running</span>
+                                    </div>
+                                    <div class="mb-3">
+                                        <div class="d-flex justify-content-between">
+                                            <small id="activeJobStep">Step 1/9: Initializing</small>
+                                            <small id="activeJobProgress">0%</small>
+                                        </div>
+                                        <div class="progress mt-2">
+                                            <div class="progress-bar bg-primary" id="activeJobProgressBar" style="width: 0%"></div>
+                                        </div>
+                                    </div>
+                                    <div class="log-container" id="activeJobLogs">
+                                        <div>Waiting for job updates...</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recent Jobs -->
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5><i class="fas fa-history"></i> Recent Jobs</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div id="recentJobsList">
+                                        <p class="text-muted text-center">No jobs yet. Start a new build!</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Build Tab -->
+                <div class="tab-pane fade" id="build">
+                    <div class="row justify-content-center">
+                        <div class="col-md-8">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5><i class="fas fa-rocket"></i> Start New Build</h5>
+                                

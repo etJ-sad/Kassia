@@ -1,0 +1,15 @@
+{
+  "name": "Kassia Python",
+  "version": "2.0.0",
+  "mountPoint": ".\\runtime\\mount",
+  "tempPath": ".\\runtime\\temp", 
+  "exportPath": ".\\runtime\\export",
+  "driverRoot": ".\\assets\\drivers",
+  "updateRoot": ".\\assets\\updates",
+  "yunonaPath": ".\\assets\\yunona",
+  "sbiRoot": "D:\\assets\\sbi",
+  "osWimMap": {
+    "10": "D:\\assets\\sbi\\w10_enterprise.wim",
+    "21656": "D:\\assets\\sbi\\w11_enterprise.wim"
+  }
+}

@@ -1,0 +1,153 @@
+; ************************************************************
+; ************************************************************
+; **  Filename: EmmitsburgSystem.inf                        **
+; **  Abstract: Assigns the null driver to devices          **
+; **            for yellow-bang removal and                 **
+; **            brands Intel(R) devices                     ** 
+; ************************************************************
+; ************************************************************
+
+[Version]
+Signature=$WINDOWS NT$
+Class=System
+ClassGUID={4D36E97D-E325-11CE-BFC1-08002BE10318}
+Provider=%INTEL%
+CatalogFile=Emmitsburg.cat
+DriverVer=07/18/1968, 10.1.40.5
+PnpLockDown=1
+
+[SourceDisksNames]
+
+[SourceDisksFiles]
+
+[ControlFlags]
+ExcludeFromSelect=*
+
+[Manufacturer]
+%INTEL%=INTEL,NTx86,NTamd64
+
+[INTEL.NTx86]
+%PCI\VEN_8086&DEV_1BB8Desc%=Needs_PCI_DRV,PCI\VEN_8086&DEV_1BB8
+%PCI\VEN_8086&DEV_1BB9Desc%=Needs_PCI_DRV,PCI\VEN_8086&DEV_1BB9
+%PCI\VEN_8086&DEV_1BBADesc%=Needs_PCI_DRV,PCI\VEN_8086&DEV_1BBA
+%PCI\VEN_8086&DEV_1BBBDesc%=Needs_PCI_DRV,PCI\VEN_8086&DEV_1BBB
+%PCI\VEN_8086&DEV_1BBCDesc%=Needs_PCI_DRV,PCI\VEN_8086&DEV_1BBC
+%PCI\VEN_8086&DEV_1BBDDesc%=Needs_PCI_DRV,PCI\VEN_8086&DEV_1BBD
+%PCI\VEN_8086&DEV_1BBEDesc%=Needs_PCI_DRV,PCI\VEN_8086&DEV_1BBE
+%PCI\VEN_8086&DEV_1BBFDesc%=Needs_PCI_DRV,PCI\VEN_8086&DEV_1BBF
+%PCI\VEN_8086&DEV_1BB0Desc%=Needs_PCI_DRV,PCI\VEN_8086&DEV_1BB0
+%PCI\VEN_8086&DEV_1BB1Desc%=Needs_PCI_DRV,PCI\VEN_8086&DEV_1BB1
+%PCI\VEN_8086&DEV_1BB2Desc%=Needs_PCI_DRV,PCI\VEN_8086&DEV_1BB2
+%PCI\VEN_8086&DEV_1BB3Desc%=Needs_PCI_DRV,PCI\VEN_8086&DEV_1BB3
+%PCI\VEN_8086&DEV_1BB4Desc%=Needs_PCI_DRV,PCI\VEN_8086&DEV_1BB4
+%PCI\VEN_8086&DEV_1BB5Desc%=Needs_PCI_DRV,PCI\VEN_8086&DEV_1BB5
+%PCI\VEN_8086&DEV_1BC6Desc%=Needs_NO_DRV,PCI\VEN_8086&DEV_1BC6
+%PCI\VEN_8086&DEV_1BC7Desc%=Needs_NO_DRV,PCI\VEN_8086&DEV_1BC7
+%PCI\VEN_8086&DEV_1BC9Desc%=Needs_NO_DRV,PCI\VEN_8086&DEV_1BC9
+%PCI\VEN_8086&DEV_1BCCDesc%=Needs_NO_DRV,PCI\VEN_8086&DEV_1BCC
+%PCI\VEN_8086&DEV_1BCEDesc%=Needs_NO_DRV,PCI\VEN_8086&DEV_1BCE
+%PCI\VEN_8086&DEV_1BE6Desc%=Needs_NO_DRV,PCI\VEN_8086&DEV_1BE6
+%PCI\VEN_8086&DEV_1B80Desc%=Needs_NO_DRV,PCI\VEN_8086&DEV_1B80
+%PCI\VEN_8086&DEV_1BFFDesc%=Needs_NO_DRV,PCI\VEN_8086&DEV_1BFF
+%PCI\VEN_8086&DEV_1BCADesc%=Needs_NO_DRV,PCI\VEN_8086&DEV_1BCA
+%ACPI\INTC1071Desc%=Needs_NO_DRV,ACPI\INTC1071
+
+[INTEL.NTamd64]
+%PCI\VEN_8086&DEV_1BB8Desc%=Needs_PCI_DRV,PCI\VEN_8086&DEV_1BB8
+%PCI\VEN_8086&DEV_1BB9Desc%=Needs_PCI_DRV,PCI\VEN_8086&DEV_1BB9
+%PCI\VEN_8086&DEV_1BBADesc%=Needs_PCI_DRV,PCI\VEN_8086&DEV_1BBA
+%PCI\VEN_8086&DEV_1BBBDesc%=Needs_PCI_DRV,PCI\VEN_8086&DEV_1BBB
+%PCI\VEN_8086&DEV_1BBCDesc%=Needs_PCI_DRV,PCI\VEN_8086&DEV_1BBC
+%PCI\VEN_8086&DEV_1BBDDesc%=Needs_PCI_DRV,PCI\VEN_8086&DEV_1BBD
+%PCI\VEN_8086&DEV_1BBEDesc%=Needs_PCI_DRV,PCI\VEN_8086&DEV_1BBE
+%PCI\VEN_8086&DEV_1BBFDesc%=Needs_PCI_DRV,PCI\VEN_8086&DEV_1BBF
+%PCI\VEN_8086&DEV_1BB0Desc%=Needs_PCI_DRV,PCI\VEN_8086&DEV_1BB0
+%PCI\VEN_8086&DEV_1BB1Desc%=Needs_PCI_DRV,PCI\VEN_8086&DEV_1BB1
+%PCI\VEN_8086&DEV_1BB2Desc%=Needs_PCI_DRV,PCI\VEN_8086&DEV_1BB2
+%PCI\VEN_8086&DEV_1BB3Desc%=Needs_PCI_DRV,PCI\VEN_8086&DEV_1BB3
+%PCI\VEN_8086&DEV_1BB4Desc%=Needs_PCI_DRV,PCI\VEN_8086&DEV_1BB4
+%PCI\VEN_8086&DEV_1BB5Desc%=Needs_PCI_DRV,PCI\VEN_8086&DEV_1BB5
+%PCI\VEN_8086&DEV_1BC6Desc%=Needs_NO_DRV,PCI\VEN_8086&DEV_1BC6
+%PCI\VEN_8086&DEV_1BC7Desc%=Needs_NO_DRV,PCI\VEN_8086&DEV_1BC7
+%PCI\VEN_8086&DEV_1BC9Desc%=Needs_NO_DRV,PCI\VEN_8086&DEV_1BC9
+%PCI\VEN_8086&DEV_1BCCDesc%=Needs_NO_DRV,PCI\VEN_8086&DEV_1BCC
+%PCI\VEN_8086&DEV_1BCEDesc%=Needs_NO_DRV,PCI\VEN_8086&DEV_1BCE
+%PCI\VEN_8086&DEV_1BE6Desc%=Needs_NO_DRV,PCI\VEN_8086&DEV_1BE6
+%PCI\VEN_8086&DEV_1B80Desc%=Needs_NO_DRV,PCI\VEN_8086&DEV_1B80
+%PCI\VEN_8086&DEV_1BFFDesc%=Needs_NO_DRV,PCI\VEN_8086&DEV_1BFF
+%PCI\VEN_8086&DEV_1BCADesc%=Needs_NO_DRV,PCI\VEN_8086&DEV_1BCA
+%ACPI\INTC1071Desc%=Needs_NO_DRV,ACPI\INTC1071
+
+[Needs_PCI_DRV]
+Include=machine.inf
+Needs=PCI_DRV
+
+[Needs_PCI_DRV.Services]
+Include=machine.inf
+Needs=PCI_DRV.Services
+
+[Needs_PCI_DRV.HW]
+Include=machine.inf
+Needs=PCI_DRV.HW
+
+[Needs_NO_DRV]
+Include=machine.inf
+Needs=NO_DRV
+
+[Needs_NO_DRV.Services]
+Include=machine.inf
+Needs=NO_DRV.Services
+
+[Strings]
+INTEL="INTEL"
+PCI\VEN_8086&DEV_1BB8Desc="Intel(R) PCIe* Root Port #0 - 1BB8 - 1BB8"
+PCI\VEN_8086&DEV_1BB9Desc="Intel(R) PCIe* Root Port #1 - 1BB9 - 1BB9"
+PCI\VEN_8086&DEV_1BBADesc="Intel(R) PCIe* Root Port #2 - 1BBA - 1BBA"
+PCI\VEN_8086&DEV_1BBBDesc="Intel(R) PCIe* Root Port #3 - 1BBB - 1BBB"
+PCI\VEN_8086&DEV_1BBCDesc="Intel(R) PCIe* Root Port #4 - 1BBC - 1BBC"
+PCI\VEN_8086&DEV_1BBDDesc="Intel(R) PCIe* Root Port #5 - 1BBD - 1BBD"
+PCI\VEN_8086&DEV_1BBEDesc="Intel(R) PCIe* Root Port #6 - 1BBE - 1BBE"
+PCI\VEN_8086&DEV_1BBFDesc="Intel(R) PCIe* Root Port #7 - 1BBF - 1BBF"
+PCI\VEN_8086&DEV_1BB0Desc="Intel(R) PCIe* Root Port #8 - 1BB0 - 1BB0"
+PCI\VEN_8086&DEV_1BB1Desc="Intel(R) PCIe* Root Port #9 - 1BB1 - 1BB1"
+PCI\VEN_8086&DEV_1BB2Desc="Intel(R) PCIe* Root Port #10 - 1BB2 - 1BB2"
+PCI\VEN_8086&DEV_1BB3Desc="Intel(R) PCIe* Root Port #11 - 1BB3 - 1BB3"
+PCI\VEN_8086&DEV_1BB4Desc="Intel(R) PCIe* Root Port #12 - 1BB4 - 1BB4"
+PCI\VEN_8086&DEV_1BB5Desc="Intel(R) PCIe* Root Port #13 - 1BB5 - 1BB5"
+PCI\VEN_8086&DEV_1BC6Desc="Intel(R) P2SB - 1BC6 - 1BC6"
+PCI\VEN_8086&DEV_1BC7Desc="Intel(R) Power Management controller - 1BC7 - 1BC7"
+PCI\VEN_8086&DEV_1BC9Desc="Intel(R) SMBus - 1BC9 - 1BC9"
+PCI\VEN_8086&DEV_1BCCDesc="Intel(R) TH - 1BCC - 1BCC"
+PCI\VEN_8086&DEV_1BCEDesc="Intel(R) PMC Shared - 1BCE - 1BCE"
+PCI\VEN_8086&DEV_1BE6Desc="Intel(R) MROM - 1BE6 - 1BE6"
+PCI\VEN_8086&DEV_1B80Desc="Intel(R) eSPI Controller - 1B80 - 1B80"
+PCI\VEN_8086&DEV_1BFFDesc="Intel(R) DMA SMBus Controller - 1BFF"
+PCI\VEN_8086&DEV_1BCADesc="Intel(R) SPI Controller - 1BCA"
+ACPI\INTC1071Desc="Intel(R) GPIO Controller - 1071"
+
+
+
+
+; Copyright (c) 2003-2019 Intel Corporation
+; 
+; ********************************************************************************
+; Intel is making no claims of usability, efficacy or warranty.
+; ********************************************************************************
+; Information in this document is provided in connection with Intel products. No
+; license, express or implied, by estoppel or otherwise, to any intellectual
+; property rights is granted by this document. Intel assumes no liability
+; whatsoever, and Intel disclaims any express or implied warranty, relating to
+; sale and/or use of Intel products including liability or warranties relating to
+; fitness for a particular purpose, merchantability, or infringement of any
+; patent, copyright or other intellectual property right. Intel products are not
+; intended for use in medical, life saving, or life sustaining applications.
+; ********************************************************************************
+; Intel Corporation disclaims all warranties and liabilities for the use of this
+; document and the information contained herein, and assumes no responsibility for
+; any errors which may appear in this document, nor does Intel make a commitment
+; to update the information contained herein. Intel reserves the right to make
+; changes to this document at any time, without notice.
+; ********************************************************************************
+; ********************************************************************************
+; 
+; * Third-party brands and names are the property of their respective owners.

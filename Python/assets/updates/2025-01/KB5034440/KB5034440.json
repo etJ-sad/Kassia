@@ -1,0 +1,16 @@
+{
+  "updateName": "2025-01 Servicing Stack Update",
+  "updateVersion": "KB5034440",
+  "updateType": "msu",
+  "downloadFileName": "windows10.0-kb5034440-x64.msu",
+  "supportedOperatingSystems": [
+    10,
+    21652
+  ],
+  "rebootRequired": false,
+  "order": 50,
+  "description": "Servicing Stack Update - Install First",
+  "downloadDate": "2025-07-29T17:32:32.563351",
+  "size": 0,
+  "manufacturer": "Microsoft Corporation"
+}

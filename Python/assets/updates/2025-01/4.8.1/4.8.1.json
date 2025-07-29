@@ -1,0 +1,15 @@
+{
+  "updateName": "Microsoft .NET Framework 4.8.1",
+  "updateVersion": "4.8.1",
+  "updateType": "exe",
+  "downloadFileName": "ndp481-x86-x64-allos-enu.exe",
+  "supportedOperatingSystems": [
+    10
+  ],
+  "rebootRequired": true,
+  "order": 150,
+  "description": ".NET Framework 4.8.1 Final Release",
+  "downloadDate": "2025-07-29T17:32:32.570284",
+  "size": 0,
+  "manufacturer": "Microsoft Corporation"
+}

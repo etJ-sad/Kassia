@@ -1,0 +1,9 @@
+This is a dummy EXE file for testing purposes.
+Update: Microsoft .NET Framework 4.8.1
+Version: 4.8.1
+Type: exe
+
+In a real scenario, this would be the actual update file downloaded from Microsoft.
+For testing, this dummy file allows the update integration system to function.
+
+Created: 2025-07-29T17:32:32.570756

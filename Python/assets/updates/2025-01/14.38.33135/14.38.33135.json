@@ -1,0 +1,17 @@
+{
+  "updateName": "Visual C++ 2022 Redistributable",
+  "updateVersion": "14.38.33135",
+  "updateType": "exe",
+  "downloadFileName": "VC_redist.x64.exe",
+  "supportedOperatingSystems": [
+    10,
+    21652,
+    21656
+  ],
+  "rebootRequired": false,
+  "order": 200,
+  "description": "Microsoft Visual C++ 2022 Redistributable Package",
+  "downloadDate": "2025-07-29T17:32:32.564320",
+  "size": 0,
+  "manufacturer": "Microsoft Corporation"
+}
