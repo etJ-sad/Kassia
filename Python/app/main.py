@@ -1,5 +1,5 @@
 """
-Kassia Python - Main CLI Entry Point (With WIM Handler Integration)
+Kassia Python - Main CLI Entry Point (Fixed Asset Provider Integration)
 Windows Image Preparation System - Python Edition
 """
 
@@ -117,9 +117,19 @@ def initialize_directories(build_config: BuildConfig) -> None:
             sys.exit(1)
 
 async def discover_and_display_assets(kassia_config: KassiaConfig, device_name: str) -> dict:
-    """Discover and display available assets."""
+    """Discover and display available assets with proper config integration."""
     assets_path = Path("assets")
-    provider = LocalAssetProvider(assets_path)
+    
+    # FIXED: Pass build config to asset provider
+    build_config_dict = {
+        'driverRoot': kassia_config.build.driverRoot,
+        'updateRoot': kassia_config.build.updateRoot,
+        'sbiRoot': kassia_config.build.sbiRoot,
+        'yunonaPath': kassia_config.build.yunonaPath,
+        'osWimMap': kassia_config.build.osWimMap
+    }
+    
+    provider = LocalAssetProvider(assets_path, build_config=build_config_dict)
     
     click.echo("\n🔍 Discovering assets...")
     
@@ -130,11 +140,13 @@ async def discover_and_display_assets(kassia_config: KassiaConfig, device_name: 
         'yunona_scripts': []
     }
     
-    # Discover SBI (System Base Image)
+    # Discover SBI (System Base Image) - Now with proper config integration
     sbi_asset = await provider.get_sbi(kassia_config.selectedOsId)
     if sbi_asset:
         size_mb = sbi_asset.size / (1024 * 1024) if sbi_asset.size else 0
         click.echo(f"📀 SBI Found: {sbi_asset.name} ({size_mb:.1f} MB)")
+        click.echo(f"   📁 Path: {sbi_asset.path}")
+        click.echo(f"   📋 Source: {sbi_asset.metadata.get('source', 'unknown')}")
         assets_summary['sbi'] = sbi_asset
         
         # Validate SBI with WIM Handler
@@ -147,7 +159,9 @@ async def discover_and_display_assets(kassia_config: KassiaConfig, device_name: 
             click.echo(f"   ❌ WIM validation failed: {e}")
     else:
         click.echo(f"❌ No SBI found for OS ID {kassia_config.selectedOsId}")
-        click.echo(f"   Expected location: assets/sbi/*.wim")
+        click.echo(f"   Expected locations:")
+        click.echo(f"     - Config mapping: {kassia_config.build.osWimMap.get(str(kassia_config.selectedOsId), 'Not configured')}")
+        click.echo(f"     - SBI directory: {kassia_config.build.sbiRoot}/*{kassia_config.selectedOsId}*.wim")
     
     # Discover other assets (same as before)
     drivers = await provider.get_drivers(device_name, kassia_config.selectedOsId)
@@ -188,15 +202,24 @@ def display_configuration_summary(config: KassiaConfig, assets_summary: dict) ->
     click.echo(f"   Device: {config.device.deviceId}")
     click.echo(f"   OS ID: {config.selectedOsId}")
     click.echo(f"   Required Driver Families: {len(config.get_driver_families())}")
-    click.echo(f"   WIM: {config.get_wim_path()}")
+    
+    # Show configured WIM path
+    configured_wim = config.build.osWimMap.get(str(config.selectedOsId))
+    if configured_wim:
+        click.echo(f"   Configured WIM: {configured_wim}")
+    else:
+        click.echo(f"   ❌ No WIM configured for OS {config.selectedOsId}")
     
     # Build readiness with WIM focus
     click.echo("\n🎯 Build Readiness Assessment:")
     
     if assets_summary['sbi']:
         click.echo("   ✅ SBI ready for WIM processing")
+        sbi_source = assets_summary['sbi'].metadata.get('source', 'unknown')
+        click.echo(f"      📋 Discovery method: {sbi_source}")
     else:
         click.echo("   ❌ SBI missing - cannot proceed with WIM build")
+        click.echo("      💡 Check configuration paths and file existence")
     
     drivers_count = len(assets_summary['drivers'])
     if drivers_count > 0:
@@ -210,6 +233,10 @@ async def execute_wim_workflow(kassia_config: KassiaConfig, assets_summary: dict
     
     if not assets_summary['sbi']:
         click.echo("❌ Cannot execute WIM workflow without SBI")
+        click.echo("💡 Troubleshooting:")
+        click.echo("   1. Check if WIM file exists at configured path")
+        click.echo("   2. Verify config.json osWimMap settings")
+        click.echo("   3. Run debug_config_paths.py for detailed analysis")
         return None
     
     sbi_asset = assets_summary['sbi']
@@ -478,6 +505,14 @@ def cli(device: Optional[str], os_id: int, validate: bool, debug: bool,
         try:
             kassia_config = ConfigLoader.create_kassia_config(device, os_id)
             click.echo("✅ Configuration loaded and validated successfully")
+            
+            # Additional configuration validation
+            config_validation = kassia_config.validate_configuration()
+            if config_validation.has_warnings():
+                click.echo("⚠️  Configuration warnings:")
+                for warning in config_validation.warnings:
+                    click.echo(f"   - {warning}")
+                    
         except Exception as e:
             click.echo(f"❌ Configuration validation failed: {e}")
             if debug:
@@ -490,7 +525,7 @@ def cli(device: Optional[str], os_id: int, validate: bool, debug: bool,
         initialize_directories(kassia_config.build)
         click.echo("✅ Directories initialized")
         
-        # Asset Discovery with WIM validation
+        # Asset Discovery with WIM validation (FIXED)
         assets_summary = asyncio.run(discover_and_display_assets(kassia_config, device))
         
         # Display configuration summary
@@ -519,6 +554,7 @@ Device: {kassia_config.device.deviceId}
 OS ID: {kassia_config.selectedOsId}
 Total Assets: {total_assets}
 WIM Handler: ✅ Ready
+SBI Status: {'✅ Found' if assets_summary['sbi'] else '❌ Missing'}
 ============================================================
 """)
             return
@@ -569,6 +605,8 @@ OS ID: {kassia_config.selectedOsId}
 ============================================================
 
 💡 Check error messages above for details.
+💡 Run with --debug for more information.
+💡 Use debug_config_paths.py to troubleshoot configuration issues.
 """)
             sys.exit(1)
         

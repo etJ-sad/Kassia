@@ -2,24 +2,18 @@
   "name": "Kassia Python",
   "version": "2.0.0",
   "mountPoint": ".\\runtime\\mount",
-  "tempPath": ".\\runtime\\temp", 
+  "tempPath": ".\\runtime\\temp",
   "exportPath": ".\\runtime\\export",
   "driverRoot": ".\\assets\\drivers",
   "updateRoot": ".\\assets\\updates",
   "yunonaPath": ".\\assets\\yunona",
-  "sbiRoot": ".\\assets\\sbi",
+  "sbiRoot": "D:\\assets\\sbi",
   "osWimMap": {
-    "10": "D:\\assets\\sbi\\w10_enterprise.wim",
-    "21656": "D:\\assets\\sbi\\w11_enterprise.wim"
+    "10": "D:/assets/sbi/w10_enterprise.wim",
+    "21656": "D:/assets/sbi/w11_enterprise.wim"
   },
   "windowsTools": {
     "dismPath": "C:\\Windows\\System32\\dism.exe",
     "powershellPath": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"
-  },
-  "assetProvider": {
-    "type": "local",
-    "config": {
-      "assetsPath": ".\\assets"
-    }
   }
 }

@@ -1,5 +1,5 @@
 """
-Local Asset Provider Implementation
+Local Asset Provider Implementation - Fixed for Config Integration
 """
 
 import json
@@ -17,14 +17,33 @@ logger = logging.getLogger(__name__)
 class LocalAssetProvider(AssetProvider):
     """Local filesystem asset provider for development and testing."""
     
-    def __init__(self, assets_path: Path):
+    def __init__(self, assets_path: Path, build_config: Optional[Dict] = None):
+        """Initialize with assets path and optional build configuration."""
         self.assets_path = Path(assets_path)
-        self.drivers_path = self.assets_path / "drivers"
-        self.updates_path = self.assets_path / "updates"
-        self.sbi_path = self.assets_path / "sbi"
-        self.yunona_path = self.assets_path / "yunona"
+        self.build_config = build_config
         
-        logger.info(f"LocalAssetProvider initialized with path: {self.assets_path}")
+        # Use build config paths if available
+        if build_config:
+            self.drivers_path = Path(build_config.get('driverRoot', assets_path / "drivers"))
+            self.updates_path = Path(build_config.get('updateRoot', assets_path / "updates"))
+            self.sbi_path = Path(build_config.get('sbiRoot', assets_path / "sbi"))
+            self.yunona_path = Path(build_config.get('yunonaPath', assets_path / "yunona"))
+            self.os_wim_map = build_config.get('osWimMap', {})
+        else:
+            # Fallback to default paths
+            self.drivers_path = self.assets_path / "drivers"
+            self.updates_path = self.assets_path / "updates"
+            self.sbi_path = self.assets_path / "sbi"
+            self.yunona_path = self.assets_path / "yunona"
+            self.os_wim_map = {}
+        
+        logger.info(f"LocalAssetProvider initialized:")
+        logger.info(f"  Assets path: {self.assets_path}")
+        logger.info(f"  Drivers path: {self.drivers_path}")
+        logger.info(f"  Updates path: {self.updates_path}")
+        logger.info(f"  SBI path: {self.sbi_path}")
+        logger.info(f"  Yunona path: {self.yunona_path}")
+        logger.info(f"  OS WIM map: {self.os_wim_map}")
     
     async def get_drivers(self, device_family: str, os_id: int) -> List[DriverAsset]:
         """Get drivers for specific device family and OS."""
@@ -73,12 +92,39 @@ class LocalAssetProvider(AssetProvider):
         return updates
     
     async def get_sbi(self, os_id: int) -> Optional[SBIAsset]:
-        """Get System Base Image for OS."""
+        """Get System Base Image for OS - Enhanced to use config mapping."""
+        
+        # First try: Use OS WIM mapping from build config
+        if self.os_wim_map and str(os_id) in self.os_wim_map:
+            wim_path_str = self.os_wim_map[str(os_id)]
+            wim_path = Path(wim_path_str)
+            
+            logger.info(f"Checking configured WIM path for OS {os_id}: {wim_path}")
+            
+            if wim_path.exists() and wim_path.is_file():
+                logger.info(f"Found SBI via config mapping: {wim_path}")
+                return SBIAsset(
+                    name=wim_path.stem,
+                    path=wim_path,
+                    asset_type=AssetType.SBI,
+                    metadata={
+                        "source": "config_mapping",
+                        "os_id": os_id,
+                        "configured_path": wim_path_str
+                    },
+                    os_id=os_id
+                )
+            else:
+                logger.warning(f"Configured WIM path does not exist: {wim_path}")
+        
+        # Second try: Search in SBI directory (fallback)
         if not self.sbi_path.exists():
             logger.warning(f"SBI path does not exist: {self.sbi_path}")
             return None
         
-        # Look for WIM files
+        logger.info(f"Searching for WIM files in SBI directory: {self.sbi_path}")
+        
+        # Look for WIM files with various naming patterns
         wim_patterns = [
             f"*{os_id}*.wim",
             f"w{os_id}_*.wim",
@@ -86,18 +132,35 @@ class LocalAssetProvider(AssetProvider):
         ]
         
         for pattern in wim_patterns:
+            logger.debug(f"Searching with pattern: {pattern}")
             for wim_file in self.sbi_path.glob(pattern):
                 if wim_file.is_file():
-                    logger.info(f"Found SBI for OS {os_id}: {wim_file}")
+                    logger.info(f"Found SBI via directory search: {wim_file}")
                     return SBIAsset(
                         name=wim_file.stem,
                         path=wim_file,
                         asset_type=AssetType.SBI,
-                        metadata={"discovered_pattern": pattern},
+                        metadata={
+                            "source": "directory_search",
+                            "discovered_pattern": pattern,
+                            "os_id": os_id
+                        },
                         os_id=os_id
                     )
         
         logger.warning(f"No SBI found for OS {os_id}")
+        logger.info(f"Searched in:")
+        logger.info(f"  - Config mapping: {self.os_wim_map}")
+        logger.info(f"  - SBI directory: {self.sbi_path}")
+        
+        # List available files for debugging
+        if self.sbi_path.exists():
+            try:
+                available_files = [f.name for f in self.sbi_path.iterdir() if f.is_file()]
+                logger.info(f"  - Available files: {available_files}")
+            except Exception as e:
+                logger.error(f"  - Error listing SBI directory: {e}")
+        
         return None
     
     async def get_yunona_scripts(self) -> List[AssetInfo]:
@@ -134,6 +197,10 @@ class LocalAssetProvider(AssetProvider):
         if asset.asset_type == AssetType.DRIVER:
             return await self._validate_driver_directory(asset)
         
+        # For SBI, validate the WIM file
+        if asset.asset_type == AssetType.SBI:
+            return await self._validate_wim_file(asset.path)
+        
         # For other assets, expect a file
         if not asset.path.is_file():
             logger.error(f"Asset path is not a file: {asset.path}")
@@ -144,12 +211,9 @@ class LocalAssetProvider(AssetProvider):
             logger.warning(f"Asset file is empty: {asset.path}")
             return False
         
-        # Additional validation based on asset type
-        if asset.asset_type == AssetType.SBI:
-            return await self._validate_wim_file(asset.path)
-        
         return True
     
+    # [Rest of the methods remain the same as in the original file]
     async def _load_driver_from_config(self, config_file: Path, device_family: str, os_id: int) -> Optional[DriverAsset]:
         """Load driver configuration and check compatibility."""
         try:

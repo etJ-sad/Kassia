@@ -1,160 +1,854 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" dir="ltr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kassia - Windows Image Preparation System</title>
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <title>Kassia - Windows Image Preparation System | Siemens</title>
+    
+    <!-- Siemens Favicon -->
+    <link rel="apple-touch-icon" sizes="180x180" href="https://cdn.c2comms.cloud/images/favicons/1.0/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="https://cdn.c2comms.cloud/images/favicons/1.0/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="https://cdn.c2comms.cloud/images/favicons/1.0/favicon-16x16.png">
+    <link rel="shortcut icon" href="https://cdn.c2comms.cloud/images/favicons/1.0/favicon.ico">
+    
+    <!-- Siemens Sans Font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
     <style>
         :root {
-            --primary-color: #2c3e50;
-            --secondary-color: #3498db;
-            --success-color: #27ae60;
-            --warning-color: #f39c12;
-            --danger-color: #e74c3c;
-            --dark-bg: #1a1a1a;
-            --card-bg: #2d3748;
+            /* Siemens Official Colors */
+            --siemens-petrol: #009999;
+            --siemens-dark-petrol: #007A7A;
+            --siemens-light-petrol: #B3DFDF;
+            --siemens-bright-petrol: #00E6DC;
+            --siemens-deep-blue: #000028;
+            --siemens-dark-blue: #001122;
+            --siemens-white: #FFFFFF;
+            --siemens-light-gray: #F5F5F5;
+            --siemens-medium-gray: #E5E5E5;
+            --siemens-dark-gray: #333333;
+            --siemens-text-primary: #1A1A1A;
+            --siemens-text-secondary: #666666;
+            --siemens-text-light: #999999;
+            
+            /* Siemens Gradients */
+            --siemens-gradient-primary: linear-gradient(135deg, var(--siemens-petrol) 0%, var(--siemens-bright-petrol) 100%);
+            --siemens-gradient-dark: linear-gradient(135deg, var(--siemens-deep-blue) 0%, var(--siemens-dark-blue) 100%);
+            --siemens-gradient-hero: linear-gradient(135deg, var(--siemens-deep-blue) 0%, rgba(0, 153, 153, 0.8) 100%);
+            
+            /* Shadows */
+            --siemens-shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.1);
+            --siemens-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.15);
+            --siemens-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.2);
+            
+            /* Border Radius */
+            --siemens-radius-sm: 4px;
+            --siemens-radius-md: 8px;
+            --siemens-radius-lg: 12px;
+            
+            /* Typography */
+            --siemens-font-family: 'Inter', 'Siemens Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
 
         body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: var(--siemens-font-family);
+            background-color: var(--siemens-white);
+            color: var(--siemens-text-primary);
+            line-height: 1.6;
+            font-size: 16px;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }
 
-        .main-container {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            margin: 20px;
-            min-height: calc(100vh - 40px);
+        /* Siemens Header Structure */
+        .siemens-header {
+            background: var(--siemens-deep-blue);
+            position: relative;
+            z-index: 1000;
         }
 
-        .header {
-            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
-            color: white;
-            padding: 30px;
-            border-radius: 20px 20px 0 0;
-            text-align: center;
+        .header-meta {
+            background: var(--siemens-dark-blue);
+            padding: 8px 0;
+            font-size: 13px;
         }
 
-        .header h1 {
-            margin: 0;
-            font-size: 2.5rem;
-            font-weight: 300;
-        }
-
-        .header p {
-            margin: 10px 0 0 0;
-            opacity: 0.9;
-            font-size: 1.1rem;
-        }
-
-        .nav-pills .nav-link {
-            background: none;
-            border: 2px solid transparent;
-            color: var(--primary-color);
-            font-weight: 500;
-            margin: 0 5px;
-            border-radius: 50px;
-            transition: all 0.3s ease;
-        }
-
-        .nav-pills .nav-link:hover {
-            background: var(--secondary-color);
-            color: white;
-            transform: translateY(-2px);
-        }
-
-        .nav-pills .nav-link.active {
-            background: var(--primary-color);
-            color: white;
-            box-shadow: 0 4px 15px rgba(44, 62, 80, 0.3);
-        }
-
-        .card {
-            border: none;
-            border-radius: 15px;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
-
-        .card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 15px 35px rgba(0,0,0,0.15);
-        }
-
-        .progress {
-            height: 8px;
-            border-radius: 10px;
-            background: #f1f3f4;
-        }
-
-        .progress-bar {
-            border-radius: 10px;
-            transition: width 0.6s ease;
-        }
-
-        .status-badge {
-            display: inline-flex;
-            align-items: center;
-            padding: 8px 15px;
-            border-radius: 20px;
-            font-size: 0.85rem;
-            font-weight: 500;
-        }
-
-        .status-running { background: #e3f2fd; color: #1976d2; }
-        .status-completed { background: #e8f5e8; color: #2e7d32; }
-        .status-failed { background: #ffebee; color: #c62828; }
-        .status-created { background: #f3e5f5; color: #7b1fa2; }
-
-        .asset-item {
+        .header-meta-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 15px;
-            margin: 10px 0;
-            background: #f8f9fa;
-            border-radius: 10px;
-            border-left: 4px solid var(--secondary-color);
+            color: var(--siemens-white);
         }
 
-        .asset-valid { border-left-color: var(--success-color); }
-        .asset-invalid { border-left-color: var(--danger-color); }
+        .meta-nav-link {
+            color: var(--siemens-white);
+            text-decoration: none;
+            opacity: 0.9;
+            transition: opacity 0.2s;
+            margin-right: 24px;
+        }
 
-        .btn-custom {
-            border-radius: 25px;
-            padding: 12px 30px;
+        .meta-nav-link:hover {
+            opacity: 1;
+        }
+
+        .language-selector {
+            display: flex;
+            gap: 4px;
+        }
+
+        .lang-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: var(--siemens-white);
+            padding: 4px 8px;
+            border-radius: var(--siemens-radius-sm);
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .lang-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .lang-btn.active {
+            background: var(--siemens-bright-petrol);
+            color: var(--siemens-deep-blue);
+            border-color: var(--siemens-bright-petrol);
+        }
+
+        .header-main {
+            padding: 16px 0;
+        }
+
+        .header-main-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .siemens-logo {
+            color: var(--siemens-white);
+            font-size: 24px;
+            font-weight: 300;
+            letter-spacing: 2px;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            background: var(--siemens-gradient-primary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 14px;
+            color: var(--siemens-white);
+        }
+
+        .header-search {
+            flex: 1;
+            max-width: 400px;
+            margin: 0 40px;
+        }
+
+        .search-container {
+            position: relative;
+        }
+
+        .search-input {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: var(--siemens-radius-md);
+            padding: 12px 44px 12px 16px;
+            color: var(--siemens-white);
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .search-input::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .search-input:focus {
+            outline: none;
+            background: rgba(255, 255, 255, 0.15);
+            border-color: var(--siemens-bright-petrol);
+            box-shadow: 0 0 0 2px rgba(0, 230, 220, 0.2);
+        }
+
+        .search-btn {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: var(--siemens-white);
+            padding: 8px;
+            cursor: pointer;
+            border-radius: var(--siemens-radius-sm);
+            transition: background 0.2s;
+        }
+
+        .search-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .header-btn {
+            background: none;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: var(--siemens-white);
+            padding: 8px 16px;
+            border-radius: var(--siemens-radius-md);
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .header-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: var(--siemens-bright-petrol);
+        }
+
+        /* Navigation */
+        .main-navigation {
+            background: var(--siemens-deep-blue);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .nav-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            gap: 48px;
+        }
+
+        .nav-item {
+            color: var(--siemens-white);
+            text-decoration: none;
+            padding: 16px 0;
+            font-size: 15px;
+            font-weight: 400;
+            position: relative;
+            transition: opacity 0.2s;
+            border-bottom: 3px solid transparent;
+        }
+
+        .nav-item:hover {
+            opacity: 0.8;
+        }
+
+        .nav-item.active {
+            border-bottom-color: var(--siemens-bright-petrol);
+        }
+
+        /* Hero Section */
+        .hero-section {
+            background: var(--siemens-gradient-hero);
+            color: var(--siemens-white);
+            padding: 80px 0 120px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-bg-pattern {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            opacity: 0.1;
+            background-image: 
+                radial-gradient(circle at 20% 30%, var(--siemens-bright-petrol) 2px, transparent 2px),
+                radial-gradient(circle at 70% 20%, var(--siemens-petrol) 1.5px, transparent 1.5px),
+                radial-gradient(circle at 40% 70%, var(--siemens-bright-petrol) 1px, transparent 1px);
+            background-size: 200px 200px, 150px 150px, 100px 100px;
+        }
+
+        .hero-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .hero-title {
+            font-size: 64px;
+            font-weight: 300;
+            line-height: 1.1;
+            margin-bottom: 24px;
+            letter-spacing: -1px;
+        }
+
+        .hero-subtitle {
+            font-size: 24px;
+            font-weight: 300;
+            margin-bottom: 32px;
+            opacity: 0.9;
+            max-width: 600px;
+            line-height: 1.4;
+        }
+
+        .hero-description {
+            font-size: 18px;
+            margin-bottom: 48px;
+            opacity: 0.8;
+            max-width: 700px;
+            line-height: 1.6;
+        }
+
+        .hero-cta {
+            background: var(--siemens-bright-petrol);
+            color: var(--siemens-deep-blue);
+            padding: 16px 32px;
+            border: none;
+            border-radius: var(--siemens-radius-md);
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            transition: all 0.3s;
+            box-shadow: var(--siemens-shadow-md);
+        }
+
+        .hero-cta:hover {
+            background: var(--siemens-petrol);
+            color: var(--siemens-white);
+            transform: translateY(-2px);
+            box-shadow: var(--siemens-shadow-lg);
+        }
+
+        /* Main Content */
+        .main-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 60px 20px;
+        }
+
+        /* Tab Navigation */
+        .tab-navigation {
+            display: flex;
+            background: var(--siemens-light-gray);
+            border-radius: var(--siemens-radius-lg);
+            padding: 8px;
+            margin-bottom: 40px;
+            overflow-x: auto;
+        }
+
+        .tab-btn {
+            background: none;
+            border: none;
+            padding: 16px 24px;
+            border-radius: var(--siemens-radius-md);
+            font-size: 15px;
             font-weight: 500;
-            transition: all 0.3s ease;
+            cursor: pointer;
+            transition: all 0.3s;
+            color: var(--siemens-text-secondary);
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tab-btn:hover {
+            background: rgba(0, 153, 153, 0.1);
+            color: var(--siemens-petrol);
+        }
+
+        .tab-btn.active {
+            background: var(--siemens-white);
+            color: var(--siemens-petrol);
+            box-shadow: var(--siemens-shadow-sm);
+        }
+
+        /* Content Cards */
+        .content-card {
+            background: var(--siemens-white);
+            border-radius: var(--siemens-radius-lg);
+            box-shadow: var(--siemens-shadow-sm);
+            margin-bottom: 32px;
+            overflow: hidden;
+            transition: all 0.3s;
+            border: 1px solid var(--siemens-medium-gray);
+        }
+
+        .content-card:hover {
+            box-shadow: var(--siemens-shadow-md);
+            transform: translateY(-2px);
+        }
+
+        .card-header {
+            background: var(--siemens-light-gray);
+            padding: 24px 32px;
+            border-bottom: 1px solid var(--siemens-medium-gray);
+            position: relative;
+        }
+
+        .card-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--siemens-gradient-primary);
+        }
+
+        .card-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: var(--siemens-deep-blue);
+            margin: 0;
+        }
+
+        .card-content {
+            padding: 32px;
+        }
+
+        .card-description {
+            font-size: 16px;
+            line-height: 1.6;
+            color: var(--siemens-text-primary);
+            margin-bottom: 24px;
+        }
+
+        /* Status Indicators */
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+
+        .status-card {
+            background: var(--siemens-white);
+            border: 1px solid var(--siemens-medium-gray);
+            border-radius: var(--siemens-radius-lg);
+            padding: 24px;
+            text-align: center;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .status-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--siemens-gradient-primary);
+        }
+
+        .status-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--siemens-shadow-md);
+            border-color: var(--siemens-petrol);
+        }
+
+        .status-number {
+            font-size: 48px;
+            font-weight: 300;
+            color: var(--siemens-petrol);
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .status-label {
+            font-size: 14px;
+            color: var(--siemens-text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 500;
+        }
+
+        /* Form Elements */
+        .form-group {
+            margin-bottom: 24px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--siemens-text-primary);
+            margin-bottom: 8px;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid var(--siemens-medium-gray);
+            border-radius: var(--siemens-radius-md);
+            font-size: 16px;
+            transition: all 0.3s;
+            background: var(--siemens-white);
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--siemens-petrol);
+            box-shadow: 0 0 0 3px rgba(0, 153, 153, 0.1);
+        }
+
+        .form-select {
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+            background-position: right 12px center;
+            background-repeat: no-repeat;
+            background-size: 16px;
+            appearance: none;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 12px 24px;
+            border-radius: var(--siemens-radius-md);
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s;
             border: none;
         }
 
-        .btn-primary-custom {
-            background: linear-gradient(135deg, var(--secondary-color) 0%, #5dade2 100%);
+        .btn-primary {
+            background: var(--siemens-gradient-primary);
+            color: var(--siemens-white);
+            box-shadow: var(--siemens-shadow-sm);
+        }
+
+        .btn-primary:hover {
+            background: var(--siemens-dark-petrol);
+            transform: translateY(-2px);
+            box-shadow: var(--siemens-shadow-md);
+        }
+
+        .btn-secondary {
+            background: var(--siemens-white);
+            color: var(--siemens-petrol);
+            border: 2px solid var(--siemens-petrol);
+        }
+
+        .btn-secondary:hover {
+            background: var(--siemens-petrol);
+            color: var(--siemens-white);
+        }
+
+        /* Progress Bar */
+        .progress-container {
+            background: var(--siemens-light-gray);
+            border-radius: 8px;
+            height: 8px;
+            overflow: hidden;
+            margin: 16px 0;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: var(--siemens-gradient-primary);
+            border-radius: 8px;
+            transition: width 0.6s ease;
+            position: relative;
+        }
+
+        .progress-bar::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        /* Asset Grid */
+        .asset-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 24px;
+            margin-top: 32px;
+        }
+
+        .asset-item {
+            background: var(--siemens-white);
+            border: 1px solid var(--siemens-medium-gray);
+            border-radius: var(--siemens-radius-lg);
+            padding: 24px;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .asset-item:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--siemens-shadow-md);
+            border-color: var(--siemens-petrol);
+        }
+
+        .asset-item.valid {
+            border-left: 4px solid var(--siemens-petrol);
+        }
+
+        .asset-item.invalid {
+            border-left: 4px solid #e74c3c;
+        }
+
+        .asset-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--siemens-deep-blue);
+            margin-bottom: 8px;
+        }
+
+        .asset-type {
+            font-size: 12px;
+            background: var(--siemens-light-petrol);
+            color: var(--siemens-deep-blue);
+            padding: 4px 8px;
+            border-radius: 12px;
+            margin-bottom: 12px;
+            display: inline-block;
+            font-weight: 500;
+        }
+
+        .asset-path {
+            font-size: 14px;
+            color: var(--siemens-text-secondary);
+            font-family: 'Courier New', monospace;
+            margin-bottom: 12px;
+            word-break: break-all;
+        }
+
+        .asset-status {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .status-badge {
+            padding: 6px 12px;
+            border-radius: 16px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-success {
+            background: #e8f5e8;
+            color: #2e7d32;
+        }
+
+        .status-error {
+            background: #ffebee;
+            color: #c62828;
+        }
+
+        .status-warning {
+            background: #fff3cd;
+            color: #d68910;
+        }
+
+        .status-info {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+
+        /* Footer */
+        .siemens-footer {
+            background: var(--siemens-deep-blue);
+            color: var(--siemens-white);
+            padding: 60px 0 30px;
+            margin-top: 80px;
+        }
+
+        .footer-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        .footer-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr;
+            gap: 48px;
+            margin-bottom: 40px;
+        }
+
+        .footer-section h3 {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--siemens-bright-petrol);
+        }
+
+        .footer-section p {
+            line-height: 1.6;
+            opacity: 0.9;
+            margin-bottom: 16px;
+        }
+
+        .footer-links {
+            list-style: none;
+        }
+
+        .footer-links li {
+            margin-bottom: 8px;
+        }
+
+        .footer-links a {
+            color: var(--siemens-white);
+            text-decoration: none;
+            opacity: 0.8;
+            transition: opacity 0.2s;
+        }
+
+        .footer-links a:hover {
+            opacity: 1;
+            color: var(--siemens-bright-petrol);
+        }
+
+        .footer-bottom {
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+            padding-top: 24px;
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            font-size: 14px;
+            opacity: 0.8;
+        }
+
+        /* Connection Status */
+        .connection-status {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            border-radius: 24px;
+            font-size: 14px;
+            font-weight: 500;
+            z-index: 10000;
+            box-shadow: var(--siemens-shadow-md);
+            transition: all 0.3s;
+        }
+
+        .status-online {
+            background: #4caf50;
             color: white;
         }
 
-        .btn-primary-custom:hover {
-            background: linear-gradient(135deg, #2980b9 0%, var(--secondary-color) 100%);
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(52, 152, 219, 0.3);
+        .status-offline {
+            background: #f44336;
+            color: white;
         }
 
+        /* Toast Notifications */
+        .toast-container {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            z-index: 10000;
+        }
+
+        .toast {
+            background: var(--siemens-white);
+            border: 1px solid var(--siemens-medium-gray);
+            border-radius: var(--siemens-radius-lg);
+            box-shadow: var(--siemens-shadow-lg);
+            padding: 16px 20px;
+            margin-bottom: 12px;
+            min-width: 320px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .toast.success {
+            border-left: 4px solid #4caf50;
+        }
+
+        .toast.error {
+            border-left: 4px solid #f44336;
+        }
+
+        .toast-close {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 4px;
+            margin-left: auto;
+            opacity: 0.7;
+        }
+
+        .toast-close:hover {
+            opacity: 1;
+        }
+
+        /* Loading Spinner */
         .loading-spinner {
-            display: inline-block;
             width: 20px;
             height: 20px;
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid var(--secondary-color);
+            border: 2px solid var(--siemens-medium-gray);
+            border-top: 2px solid var(--siemens-petrol);
             border-radius: 50%;
             animation: spin 1s linear infinite;
         }
@@ -164,172 +858,434 @@
             100% { transform: rotate(360deg); }
         }
 
-        .log-container {
-            background: #1e1e1e;
-            color: #00ff00;
-            font-family: 'Courier New', monospace;
-            padding: 20px;
-            border-radius: 10px;
-            max-height: 400px;
-            overflow-y: auto;
-            font-size: 0.9rem;
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .header-main-content {
+                flex-direction: column;
+                gap: 20px;
+                text-align: center;
+            }
+            
+            .header-search {
+                max-width: 100%;
+                margin: 0;
+            }
+            
+            .nav-content {
+                flex-direction: column;
+                gap: 0;
+            }
+            
+            .nav-item {
+                padding: 12px 0;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            }
+            
+            .hero-title {
+                font-size: 42px;
+            }
+            
+            .hero-subtitle {
+                font-size: 20px;
+            }
+            
+            .tab-navigation {
+                flex-direction: column;
+            }
+            
+            .status-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .asset-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .footer-grid {
+                grid-template-columns: 1fr;
+                gap: 32px;
+            }
         }
 
-        .stats-card {
-            text-align: center;
-            padding: 25px;
+        /* Hidden class for tab content */
+        .tab-content {
+            display: none;
         }
 
-        .stats-number {
-            font-size: 2.5rem;
-            font-weight: 700;
-            color: var(--secondary-color);
+        .tab-content.active {
+            display: block;
         }
-
-        .stats-label {
-            color: #6c757d;
-            font-size: 0.9rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .connection-status {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 10px 20px;
-            border-radius: 25px;
-            color: white;
-            font-weight: 500;
-            z-index: 1000;
-            transition: all 0.3s ease;
-        }
-
-        .connection-online { background: var(--success-color); }
-        .connection-offline { background: var(--danger-color); }
     </style>
 </head>
 <body>
     <!-- Connection Status -->
-    <div id="connectionStatus" class="connection-status connection-offline">
-        <i class="fas fa-wifi"></i> Connecting...
+    <div id="connectionStatus" class="connection-status status-offline">
+        <span>🔌 Connecting...</span>
     </div>
 
-    <div class="main-container">
-        <!-- Header -->
-        <div class="header">
-            <h1><i class="fas fa-cogs"></i> Kassia</h1>
-            <p>Windows Image Preparation System - Web Edition</p>
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Siemens Header -->
+    <header class="siemens-header">
+        <!-- Meta Navigation -->
+        <div class="header-meta">
+            <div class="header-meta-content">
+                <div>
+                    <a href="#" class="meta-nav-link">Siemens Xcelerator</a>
+                    <a href="#" class="meta-nav-link">Digital Industries</a>
+                    <a href="#" class="meta-nav-link">Smart Infrastructure</a>
+                </div>
+                <div class="language-selector">
+                    <button class="lang-btn active">EN</button>
+                    <button class="lang-btn">DE</button>
+                </div>
+            </div>
         </div>
 
-        <!-- Navigation -->
-        <div class="container-fluid p-4">
-            <ul class="nav nav-pills justify-content-center mb-4" id="mainNav">
-                <li class="nav-item">
-                    <a class="nav-link active" data-bs-toggle="pill" href="#dashboard">
-                        <i class="fas fa-tachometer-alt"></i> Dashboard
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" data-bs-toggle="pill" href="#build">
-                        <i class="fas fa-rocket"></i> New Build
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" data-bs-toggle="pill" href="#assets">
-                        <i class="fas fa-folder-open"></i> Assets
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" data-bs-toggle="pill" href="#jobs">
-                        <i class="fas fa-list"></i> Jobs
-                    </a>
-                </li>
-            </ul>
+        <!-- Main Header -->
+        <div class="header-main">
+            <div class="header-main-content">
+                <a href="#" class="siemens-logo">
+                    <div class="logo-icon">S</div>
+                    <span>SIEMENS</span>
+                </a>
+                
+                <div class="header-search">
+                    <div class="search-container">
+                        <input type="text" class="search-input" placeholder="Search Kassia documentation..." id="headerSearch">
+                        <button class="search-btn" onclick="performSearch()">
+                            <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                                <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
 
-            <!-- Tab Content -->
-            <div class="tab-content">
-                <!-- Dashboard Tab -->
-                <div class="tab-pane fade show active" id="dashboard">
-                    <div class="row">
-                        <!-- Quick Stats -->
-                        <div class="col-md-3 mb-4">
-                            <div class="card stats-card">
-                                <div class="stats-number" id="totalJobs">0</div>
-                                <div class="stats-label">Total Jobs</div>
-                            </div>
+                <div class="header-actions">
+                    <a href="#" class="header-btn">
+                        <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm2-3a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm4 8c0 1-1 1-1 1H3s-1 0-1-1 1-4 6-4 6 3 6 4zm-1-.004c-.001-.246-.154-.986-.832-1.664C11.516 10.68 10.289 10 8 10c-2.29 0-3.516.68-4.168 1.332-.678.678-.83 1.418-.832 1.664h10z"/>
+                        </svg>
+                        Login
+                    </a>
+                    <a href="#" class="header-btn">
+                        <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M3.654 1.328a.678.678 0 0 0-1.015-.063L1.605 2.3c-.483.484-.661 1.169-.45 1.77a17.568 17.568 0 0 0 4.168 6.608 17.569 17.569 0 0 0 6.608 4.168c.601.211 1.286.033 1.77-.45l1.034-1.034a.678.678 0 0 0-.063-1.015l-2.307-1.794a.678.678 0 0 0-.58-.122L9.98 10.12s-.256.098-.97-.615c-.715-.712-.615-.97-.615-.97l-.787-1.804a.678.678 0 0 0-.122-.58L5.692 3.844a.678.678 0 0 0-.122-.58l-1.916-1.936z"/>
+                        </svg>
+                        Contact
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Navigation -->
+        <div class="main-navigation">
+            <div class="nav-content">
+                <a href="#dashboard" class="nav-item active" onclick="switchTab('dashboard')">
+                    <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16" style="margin-right: 8px;">
+                        <path d="M6 1v3H1V1h5zM1 0a1 1 0 0 0-1 1v3a1 1 0 0 0 1 1h5a1 1 0 0 0 1-1V1a1 1 0 0 0-1-1H1zm14 12v3h-5v-3h5zm-5-1a1 1 0 0 0-1 1v3a1 1 0 0 0 1 1h5a1 1 0 0 0 1-1v-3a1 1 0 0 0-1-1h-5zM6 8v7H1V8h5zM1 7a1 1 0 0 0-1 1v7a1 1 0 0 0 1 1h5a1 1 0 0 0 1-1V8a1 1 0 0 0-1-1H1zm14-6v7h-5V1h5zm-5-1a1 1 0 0 0-1 1v7a1 1 0 0 0 1 1h5a1 1 0 0 0 1-1V1a1 1 0 0 0-1-1h-5z"/>
+                    </svg>
+                    Dashboard
+                </a>
+                <a href="#build" class="nav-item" onclick="switchTab('build')">
+                    <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16" style="margin-right: 8px;">
+                        <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
+                        <path d="m8.93 6.588-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533L8.93 6.588zM9 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0z"/>
+                    </svg>
+                    New Build
+                </a>
+                <a href="#assets" class="nav-item" onclick="switchTab('assets')">
+                    <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16" style="margin-right: 8px;">
+                        <path d="M1.5 0A1.5 1.5 0 0 0 0 1.5v13A1.5 1.5 0 0 0 1.5 16h13a1.5 1.5 0 0 0 1.5-1.5v-13A1.5 1.5 0 0 0 14.5 0h-13zM1 1.5a.5.5 0 0 1 .5-.5h13a.5.5 0 0 1 .5.5v13a.5.5 0 0 1-.5.5h-13a.5.5 0 0 1-.5-.5v-13z"/>
+                        <path d="M2 3h5v2H2V3zm0 3h5v1H2V6zm0 2h5v1H2V8zm7-5h5v1H9V3zm0 2h5v1H9V5zm0 2h5v1H9V7z"/>
+                    </svg>
+                    Assets
+                </a>
+                <a href="#jobs" class="nav-item" onclick="switchTab('jobs')">
+                    <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16" style="margin-right: 8px;">
+                        <path d="M7 2.5a.5.5 0 0 1 .5-.5h4a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-4a.5.5 0 0 1-.5-.5v-1zM3.5 0A1.5 1.5 0 0 0 2 1.5V15a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V1.5A1.5 1.5 0 0 0 12.5 0h-9zM3 1.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 .5.5V15H3V1.5z"/>
+                    </svg>
+                    Jobs
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <div class="hero-bg-pattern"></div>
+        <div class="hero-content">
+            <h1 class="hero-title">Kassia</h1>
+            <div class="hero-subtitle">Windows Image Preparation System</div>
+            <div class="hero-description">
+                Advanced automation platform for Windows image customization and deployment. 
+                Built with enterprise-grade reliability and Siemens engineering excellence.
+            </div>
+            <a href="#build" class="hero-cta" onclick="switchTab('build')">
+                <svg width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+                    <path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"/>
+                </svg>
+                Start Building
+            </a>
+        </div>
+    </section>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Tab Navigation -->
+        <div class="tab-navigation">
+            <button class="tab-btn active" onclick="switchTab('dashboard')" data-tab="dashboard">
+                <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                    <path d="M6 1v3H1V1h5zM1 0a1 1 0 0 0-1 1v3a1 1 0 0 0 1 1h5a1 1 0 0 0 1-1V1a1 1 0 0 0-1-1H1zm14 12v3h-5v-3h5zm-5-1a1 1 0 0 0-1 1v3a1 1 0 0 0 1 1h5a1 1 0 0 0 1-1v-3a1 1 0 0 0-1-1h-5zM6 8v7H1V8h5zM1 7a1 1 0 0 0-1 1v7a1 1 0 0 0 1 1h5a1 1 0 0 0 1-1V8a1 1 0 0 0-1-1H1zm14-6v7h-5V1h5zm-5-1a1 1 0 0 0-1 1v7a1 1 0 0 0 1 1h5a1 1 0 0 0 1-1V1a1 1 0 0 0-1-1h-5z"/>
+                </svg>
+                Dashboard
+            </button>
+            <button class="tab-btn" onclick="switchTab('build')" data-tab="build">
+                <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                    <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
+                    <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/>
+                </svg>
+                New Build
+            </button>
+            <button class="tab-btn" onclick="switchTab('assets')" data-tab="assets">
+                <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                    <path d="M1.5 0A1.5 1.5 0 0 0 0 1.5v13A1.5 1.5 0 0 0 1.5 16h13a1.5 1.5 0 0 0 1.5-1.5v-13A1.5 1.5 0 0 0 14.5 0h-13zM1 1.5a.5.5 0 0 1 .5-.5h13a.5.5 0 0 1 .5.5v13a.5.5 0 0 1-.5.5h-13a.5.5 0 0 1-.5-.5v-13z"/>
+                </svg>
+                Assets
+            </button>
+            <button class="tab-btn" onclick="switchTab('jobs')" data-tab="jobs">
+                <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                    <path d="M7 2.5a.5.5 0 0 1 .5-.5h4a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-4a.5.5 0 0 1-.5-.5v-1zM3.5 0A1.5 1.5 0 0 0 2 1.5V15a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V1.5A1.5 1.5 0 0 0 12.5 0h-9z"/>
+                </svg>
+                Jobs
+            </button>
+        </div>
+
+        <!-- Dashboard Tab -->
+        <div id="dashboard" class="tab-content active">
+            <!-- Status Overview -->
+            <div class="content-card">
+                <div class="card-header">
+                    <h2 class="card-title">System Overview</h2>
+                </div>
+                <div class="card-content">
+                    <div class="status-grid">
+                        <div class="status-card">
+                            <span class="status-number" id="totalJobs">0</span>
+                            <div class="status-label">Total Jobs</div>
                         </div>
-                        <div class="col-md-3 mb-4">
-                            <div class="card stats-card">
-                                <div class="stats-number" id="runningJobs">0</div>
-                                <div class="stats-label">Running</div>
-                            </div>
+                        <div class="status-card">
+                            <span class="status-number" id="runningJobs">0</span>
+                            <div class="status-label">Running</div>
                         </div>
-                        <div class="col-md-3 mb-4">
-                            <div class="card stats-card">
-                                <div class="stats-number" id="completedJobs">0</div>
-                                <div class="stats-label">Completed</div>
-                            </div>
+                        <div class="status-card">
+                            <span class="status-number" id="completedJobs">0</span>
+                            <div class="status-label">Completed</div>
                         </div>
-                        <div class="col-md-3 mb-4">
-                            <div class="card stats-card">
-                                <div class="stats-number" id="failedJobs">0</div>
-                                <div class="stats-label">Failed</div>
-                            </div>
+                        <div class="status-card">
+                            <span class="status-number" id="failedJobs">0</span>
+                            <div class="status-label">Failed</div>
                         </div>
                     </div>
+                </div>
+            </div>
 
-                    <!-- Active Job -->
-                    <div class="row">
-                        <div class="col-12">
-                            <div class="card" id="activeJobCard" style="display: none;">
-                                <div class="card-header">
-                                    <h5><i class="fas fa-cog fa-spin"></i> Active Build</h5>
-                                </div>
-                                <div class="card-body">
-                                    <div class="d-flex justify-content-between align-items-center mb-3">
-                                        <h6 id="activeJobTitle">Building...</h6>
-                                        <span class="status-badge status-running" id="activeJobStatus">Running</span>
-                                    </div>
-                                    <div class="mb-3">
-                                        <div class="d-flex justify-content-between">
-                                            <small id="activeJobStep">Step 1/9: Initializing</small>
-                                            <small id="activeJobProgress">0%</small>
-                                        </div>
-                                        <div class="progress mt-2">
-                                            <div class="progress-bar bg-primary" id="activeJobProgressBar" style="width: 0%"></div>
-                                        </div>
-                                    </div>
-                                    <div class="log-container" id="activeJobLogs">
-                                        <div>Waiting for job updates...</div>
-                                    </div>
-                                </div>
-                            </div>
+            <!-- Active Job -->
+            <div class="content-card" id="activeJobCard" style="display: none;">
+                <div class="card-header">
+                    <h2 class="card-title">
+                        <svg width="20" height="20" fill="currentColor" viewBox="0 0 16 16" style="margin-right: 8px; animation: spin 1s linear infinite;">
+                            <path d="M8 0a8 8 0 1 0 8 8A8 8 0 0 0 8 0zM8 15a7 7 0 1 1 7-7 7 7 0 0 1-7 7z"/>
+                            <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/>
+                        </svg>
+                        Active Build
+                    </h2>
+                </div>
+                <div class="card-content">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                        <h3 id="activeJobTitle">Building...</h3>
+                        <span class="status-badge status-info" id="activeJobStatus">Running</span>
+                    </div>
+                    <div style="margin-bottom: 16px;">
+                        <div style="display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 8px;">
+                            <span id="activeJobStep">Step 1/9: Initializing</span>
+                            <span id="activeJobProgress">0%</span>
+                        </div>
+                        <div class="progress-container">
+                            <div class="progress-bar" id="activeJobProgressBar" style="width: 0%"></div>
                         </div>
                     </div>
+                    <div style="background: var(--siemens-deep-blue); color: var(--siemens-bright-petrol); padding: 20px; border-radius: var(--siemens-radius-md); font-family: 'Courier New', monospace; font-size: 14px; max-height: 300px; overflow-y: auto;" id="activeJobLogs">
+                        <div>Waiting for job updates...</div>
+                    </div>
+                </div>
+            </div>
 
-                    <!-- Recent Jobs -->
-                    <div class="row mt-4">
-                        <div class="col-12">
-                            <div class="card">
-                                <div class="card-header">
-                                    <h5><i class="fas fa-history"></i> Recent Jobs</h5>
-                                </div>
-                                <div class="card-body">
-                                    <div id="recentJobsList">
-                                        <p class="text-muted text-center">No jobs yet. Start a new build!</p>
-                                    </div>
-                                </div>
+            <!-- Recent Jobs -->
+            <div class="content-card">
+                <div class="card-header">
+                    <h2 class="card-title">Recent Activity</h2>
+                </div>
+                <div class="card-content">
+                    <div id="recentJobsList">
+                        <p style="text-align: center; color: var(--siemens-text-secondary); padding: 40px;">
+                            No jobs yet. Start a new build to see activity here.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Build Tab -->
+        <div id="build" class="tab-content">
+            <div class="content-card">
+                <div class="card-header">
+                    <h2 class="card-title">Start New Build</h2>
+                </div>
+                <div class="card-content">
+                    <form id="buildForm">
+                        <div class="form-group">
+                            <label class="form-label" for="deviceSelect">
+                                <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16" style="margin-right: 8px;">
+                                    <path d="M6 0H2a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h4v1a4 4 0 0 0-3.5 3.97c-.5.05-1 .28-1.5.71A2 2 0 0 0 0 16a2 2 0 0 0 2-2c0-.76.75-1.31 1.66-1.32A4.009 4.009 0 0 0 7 12v1.5a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5V12a4.009 4.009 0 0 0 3.34.68C13.25 12.69 14 13.24 14 14a2 2 0 0 0 2 2 2 2 0 0 0 2-2 2 2 0 0 0-1.5-1.93c-.5-.43-1-.66-1.5-.71A4 4 0 0 0 12 9V8h4a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2h-4zM1 2a1 1 0 0 1 1-1h4v6H2a1 1 0 0 1-1-1V2z"/>
+                                </svg>
+                                Device Profile
+                            </label>
+                            <select class="form-control form-select" id="deviceSelect" required>
+                                <option value="">Loading devices...</option>
+                            </select>
+                            <small style="color: var(--siemens-text-secondary); margin-top: 4px; display: block;">
+                                Select the target device configuration for your build
+                            </small>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="osSelect">
+                                <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16" style="margin-right: 8px;">
+                                    <path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zM0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8z"/>
+                                    <path d="M5.5 5.5A.5.5 0 0 1 6 6v4a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v4a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v4a.5.5 0 0 0 1 0V6z"/>
+                                </svg>
+                                Operating System
+                            </label>
+                            <select class="form-control form-select" id="osSelect" required disabled>
+                                <option value="">Select device first...</option>
+                            </select>
+                            <small style="color: var(--siemens-text-secondary); margin-top: 4px; display: block;">
+                                Choose the target Windows version for deployment
+                            </small>
+                        </div>
+
+                        <div class="form-group">
+                            <div style="display: flex; gap: 24px; flex-wrap: wrap;">
+                                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                    <input type="checkbox" id="skipDrivers" style="margin: 0;">
+                                    <span>Skip Driver Integration</span>
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                    <input type="checkbox" id="skipUpdates" style="margin: 0;">
+                                    <span>Skip Update Integration</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary" id="startBuildBtn">
+                            <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                                <path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/>
+                            </svg>
+                            Start Build
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Build Preview -->
+            <div class="content-card" id="buildPreview" style="display: none;">
+                <div class="card-header">
+                    <h2 class="card-title">Build Preview</h2>
+                </div>
+                <div class="card-content">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 32px;">
+                        <div>
+                            <h3 style="margin-bottom: 16px; color: var(--siemens-deep-blue);">Configuration</h3>
+                            <div style="background: var(--siemens-light-gray); padding: 20px; border-radius: var(--siemens-radius-md);">
+                                <div style="margin-bottom: 12px;"><strong>Device:</strong> <span id="previewDevice">-</span></div>
+                                <div style="margin-bottom: 12px;"><strong>OS:</strong> <span id="previewOS">-</span></div>
+                                <div><strong>WIM Path:</strong> <span id="previewWimPath" style="font-family: monospace; font-size: 12px;">-</span></div>
+                            </div>
+                        </div>
+                        <div>
+                            <h3 style="margin-bottom: 16px; color: var(--siemens-deep-blue);">Asset Summary</h3>
+                            <div style="background: var(--siemens-light-gray); padding: 20px; border-radius: var(--siemens-radius-md);">
+                                <div style="margin-bottom: 12px;"><strong>SBI:</strong> <span id="previewSBI">-</span></div>
+                                <div style="margin-bottom: 12px;"><strong>Drivers:</strong> <span id="previewDrivers">-</span></div>
+                                <div><strong>Updates:</strong> <span id="previewUpdates">-</span></div>
                             </div>
                         </div>
                     </div>
                 </div>
+            </div>
+        </div>
 
-                <!-- Build Tab -->
-                <div class="tab-pane fade" id="build">
-                    <div class="row justify-content-center">
-                        <div class="col-md-8">
-                            <div class="card">
-                                <div class="card-header">
-                                    <h5><i class="fas fa-rocket"></i> Start New Build</h5>
-                                
+        <!-- Assets Tab -->
+        <div id="assets" class="tab-content">
+            <div class="content-card">
+                <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+                    <h2 class="card-title">Asset Explorer</h2>
+                    <div style="display: flex; gap: 12px; align-items: center;">
+                        <select class="form-control form-select" id="assetDeviceFilter" style="width: auto; min-width: 150px;">
+                            <option value="">All Devices</option>
+                        </select>
+                        <select class="form-control form-select" id="assetOSFilter" style="width: auto; min-width: 120px;">
+                            <option value="">All OS</option>
+                        </select>
+                        <button class="btn btn-secondary" onclick="refreshAssets()">
+                            <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                                <path fill-rule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"/>
+                                <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466z"/>
+                            </svg>
+                            Refresh
+                        </button>
+                    </div>
+                </div>
+                <div class="card-content">
+                    <div id="assetsContent">
+                        <p style="text-align: center; color: var(--siemens-text-secondary); padding: 40px;">
+                            Select device and OS to view available assets
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Jobs Tab -->
+        <div id="jobs" class="tab-content">
+            <div class="content-card">
+                <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+                    <h2 class="card-title">Build Jobs</h2>
+                    <button class="btn btn-secondary" onclick="refreshJobs()">
+                        <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                            <path fill-rule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"/>
+                            <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466z"/>
+                        </svg>
+                        Refresh
+                    </button>
+                </div>
+                <div class="card-content">
+                    <div id="jobsList">
+                        <p style="text-align: center; color: var(--siemens-text-secondary); padding: 40px;">
+                            Loading jobs...
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Siemens Footer -->
+    <footer class="siemens-footer">
+        <div class="footer-content">
+            <div class="footer-grid">
+                <div class="footer-section">
+                    <h3>Kassia</h3>
+                    <p>

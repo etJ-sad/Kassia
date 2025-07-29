@@ -1,3 +1,5 @@
+# app/models/config.py - Verbesserte Pfad-Validierung
+
 """
 Kassia Configuration Models - Type-safe configuration handling
 """
@@ -7,6 +9,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, Union, Any
 from pydantic import BaseModel, Field, validator, model_validator
 from datetime import datetime
+import os
 
 
 class AssetProviderType(str, Enum):
@@ -147,27 +150,47 @@ class BuildConfig(BaseModel):
     
     @validator('mountPoint', 'tempPath', 'exportPath', 'driverRoot', 'updateRoot', 'yunonaPath', 'sbiRoot')
     def validate_directory_paths(cls, v):
-        return str(Path(v))
+        # Normalisiere Pfad aber validiere nicht die Existenz
+        return str(Path(v).resolve())
     
     @validator('osWimMap')
     def validate_os_wim_map(cls, v):
         if not v:
             raise ValueError('OS WIM mapping cannot be empty')
         
-        # Validate that all paths are strings
+        # Validate that all paths are strings and normalize them
+        normalized_map = {}
         for os_id, wim_path in v.items():
             if not isinstance(wim_path, str):
                 raise ValueError(f'WIM path for OS {os_id} must be a string')
+            
+            # Normalisiere den Pfad (unterstützt sowohl relative als auch absolute Pfade)
+            try:
+                normalized_path = str(Path(wim_path).resolve())
+                normalized_map[os_id] = normalized_path
+            except Exception as e:
+                raise ValueError(f'Invalid WIM path for OS {os_id}: {wim_path} - {e}')
         
-        return v
+        return normalized_map
     
-    def get_wim_path(self, os_id: int) -> Optional[str]:
-        """Get WIM path for specific OS ID."""
-        return self.osWimMap.get(str(os_id))
+    def get_wim_path(self, os_id: int) -> Optional[Path]:
+        """Get WIM path for specific OS ID as Path object."""
+        wim_path_str = self.osWimMap.get(str(os_id))
+        if wim_path_str:
+            return Path(wim_path_str)
+        return None
     
     def get_supported_os_ids(self) -> List[int]:
         """Get list of supported OS IDs."""
         return [int(os_id) for os_id in self.osWimMap.keys()]
+    
+    def validate_wim_files_exist(self) -> Dict[str, bool]:
+        """Validate that WIM files actually exist."""
+        results = {}
+        for os_id, wim_path_str in self.osWimMap.items():
+            wim_path = Path(wim_path_str)
+            results[os_id] = wim_path.exists() and wim_path.is_file()
+        return results
 
 
 class RuntimeState(BaseModel):
@@ -243,11 +266,30 @@ class KassiaConfig(BaseModel):
             return []
         return self.device.get_driver_families_for_os(self.selectedOsId)
     
-    def get_wim_path(self) -> Optional[str]:
+    def get_wim_path(self) -> Optional[Path]:
         """Get WIM path for selected OS."""
         if not self.selectedOsId:
             return None
         return self.build.get_wim_path(self.selectedOsId)
+    
+    def validate_configuration(self) -> ValidationResult:
+        """Validate complete configuration."""
+        result = ValidationResult(isValid=True)
+        
+        # Check WIM file existence
+        wim_validation = self.build.validate_wim_files_exist()
+        for os_id, exists in wim_validation.items():
+            if not exists:
+                wim_path = self.build.osWimMap[os_id]
+                result.add_warning(f"WIM file not found for OS {os_id}: {wim_path}")
+        
+        # Check selected OS WIM if specified
+        if self.selectedOsId:
+            wim_path = self.get_wim_path()
+            if wim_path and not wim_path.exists():
+                result.add_error(f"Selected OS WIM file not found: {wim_path}")
+        
+        return result
 
 
 # Configuration loading utilities
@@ -292,8 +334,16 @@ class ConfigLoader:
         device_config = ConfigLoader.load_device_config(device_name)
         build_config = ConfigLoader.load_build_config()
         
-        return KassiaConfig(
+        kassia_config = KassiaConfig(
             device=device_config,
             build=build_config,
             selectedOsId=os_id
         )
+        
+        # Validate configuration
+        validation_result = kassia_config.validate_configuration()
+        if validation_result.has_errors():
+            error_msg = "Configuration validation failed:\n" + "\n".join(validation_result.errors)
+            raise ValueError(error_msg)
+        
+        return kassia_config
