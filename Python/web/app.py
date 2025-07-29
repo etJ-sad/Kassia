@@ -130,6 +130,15 @@ async def dashboard(request: Request):
     """Main dashboard page."""
     return templates.TemplateResponse("index.html", {"request": request})
 
+@app.get("/index-{lang}.html", response_class=HTMLResponse)
+async def dashboard_lang(request: Request, lang: str):
+    """Language-specific dashboard page."""
+    supported = {"de", "en", "ru", "cs"}
+    if lang not in supported:
+        lang = "en"
+    template = f"index-{lang}.html"
+    return templates.TemplateResponse(template, {"request": request})
+
 @app.get("/api/devices")
 async def list_devices() -> List[DeviceInfo]:
     """List available device configurations."""
