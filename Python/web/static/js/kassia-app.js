@@ -1,9 +1,4 @@
-document.getElementById('jobLogCount').textContent = `${totalCount} entries`;
-        document.getElementById('jobLogErrors').textContent = `${errorCount} errors`;
-        document.getElementById('jobLogLastUpdate').textContent = new Date().toLocaleTimeString();
-    }
-
-    async downloadJobLogs() {
+async downloadJobLogs() {
         if (!this.currentJobViewer) return;
         
         const jobId = this.currentJobViewer.jobId;
@@ -1745,8 +1740,13 @@ class KassiaApp {
 
     updateJobLogStats(logs) {
         const totalCount = logs.length;
-        const errorCount = logs.filter(log => 
+        const errorCount = logs.filter(log =>
             log.level === 'ERROR' || log.level === 'CRITICAL'
         ).length;
-        
-        document.getElementById('jobLogCount').textContent = `${total
+
+        document.getElementById('jobLogCount').textContent = `${totalCount} entries`;
+        document.getElementById('jobLogErrors').textContent = `${errorCount} errors`;
+        document.getElementById('jobLogLastUpdate').textContent = new Date().toLocaleTimeString();
+    }
+}
+
