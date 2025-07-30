@@ -101,6 +101,12 @@
                     </svg>
                     Jobs
                 </a>
+                <a href="#system-logs" class="nav-item" onclick="switchTab('system-logs')">
+                    <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16" style="margin-right: 8px;">
+                        <path d="M2 2h12v1H2V2zm0 3h12v1H2V5zm0 3h12v1H2V8zm0 3h12v1H2v-1z"/>
+                    </svg>
+                    Системные логи
+                </a>
             </div>
         </div>
     </header>
@@ -152,6 +158,12 @@
                     <path d="M7 2.5a.5.5 0 0 1 .5-.5h4a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-4a.5.5 0 0 1-.5-.5v-1zM3.5 0A1.5 1.5 0 0 0 2 1.5V15a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V1.5A1.5 1.5 0 0 0 12.5 0h-9z"/>
                 </svg>
                 Jobs
+            </button>
+            <button class="tab-btn" onclick="switchTab('system-logs')" data-tab="system-logs">
+                <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                    <path d="M2 2h12v1H2V2zm0 3h12v1H2V5zm0 3h12v1H2V8zm0 3h12v1H2v-1z"/>
+                </svg>
+                Системные логи
             </button>
         </div>
 
@@ -370,6 +382,25 @@
                 </div>
             </div>
         </div>
+
+        <!-- System Logs Tab -->
+        <div id="system-logs" class="tab-content">
+            <div class="content-card">
+                <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+                    <h2 class="card-title">Системные логи</h2>
+                    <button class="btn btn-secondary" onclick="window.systemLogViewer.loadLogs()">
+                        <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                            <path fill-rule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"/>
+                            <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466z"/>
+                        </svg>
+                        Обновить
+                    </button>
+                </div>
+                <div class="card-content" id="systemLogsWrapper">
+                    <div class="loading">Loading logs...</div>
+                </div>
+            </div>
+        </div>
     </main>
 
     <!-- Siemens Footer -->
@@ -422,6 +453,7 @@
 
     <!-- JavaScript einbinden -->
     <script src="/static/js/kassia-app.js"></script>
-	<script src="/static/js/job-logs.js"></script>
+        <script src="/static/js/job-logs.js"></script>
+        <script src="/static/js/system-logs.js"></script>
 </body>
 </html>
