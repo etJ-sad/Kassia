@@ -2,6 +2,14 @@
 
 This directory contains Windows Updates and software packages for integration into WIM images.
 
+## Setup
+
+Install the required Python dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
 ## Directory Structure
 
 ```
