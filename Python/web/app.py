@@ -215,13 +215,17 @@ class LogEntry(BaseModel):
 
 # Language detection for templates
 def get_template_path(request: Request, template_name: str = "index.html") -> str:
-    """Determine template path based on Accept-Language header or query parameter."""
-    # Check for explicit language parameter
-    lang = request.query_params.get('lang')
-    
+    """Determine template path based on the request language settings."""
+    # Path parameter takes highest precedence
+    lang = request.path_params.get('lang') if hasattr(request, 'path_params') else None
+
+    # Fallback to explicit query parameter
     if not lang:
-        # Try to detect from Accept-Language header
-        accept_language = request.headers.get('accept-language', '')
+        lang = request.query_params.get('lang')
+
+    # Finally inspect the Accept-Language header
+    if not lang:
+        accept_language = request.headers.get('accept-language', '').lower()
         if 'de' in accept_language:
             lang = 'de'
         elif 'ru' in accept_language:
