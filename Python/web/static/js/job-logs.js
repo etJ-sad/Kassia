@@ -479,4 +479,4 @@ document.head.insertAdjacentHTML('beforeend', logViewerStyles);
 // Usage example:
 // const logViewer = new JobLogViewer('your-job-id-here');
 
-window.JobLogViewer = JobLogViewer;
+export { JobLogViewer };
