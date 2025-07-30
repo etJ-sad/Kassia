@@ -24,7 +24,8 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 # Import logging system
 from app.utils.logging import (
-    get_logger, configure_logging, LogLevel, LogCategory, get_log_buffer
+    get_logger, configure_logging, LogLevel, LogCategory, get_log_buffer,
+    get_job_logger, create_job_logger, finalize_job_logging, get_job_log_files
 )
 
 # Import existing modules
@@ -102,6 +103,9 @@ class JobStatus:
             'os_id': os_id,
             'user_id': user_id
         })
+        
+        # Create dedicated job logger
+        create_job_logger(job_id)
         
         return job_id
     
@@ -209,16 +213,47 @@ class LogEntry(BaseModel):
     details: Optional[Dict[str, Any]] = None
     job_id: Optional[str] = None
 
+# Language detection for templates
+def get_template_path(request: Request, template_name: str = "index.html") -> str:
+    """Determine template path based on Accept-Language header or query parameter."""
+    # Check for explicit language parameter
+    lang = request.query_params.get('lang')
+    
+    if not lang:
+        # Try to detect from Accept-Language header
+        accept_language = request.headers.get('accept-language', '')
+        if 'de' in accept_language:
+            lang = 'de'
+        elif 'ru' in accept_language:
+            lang = 'ru'
+        elif 'cs' in accept_language:
+            lang = 'cs'
+        else:
+            lang = 'en'
+    
+    # Check if specific language template exists
+    lang_template = f"index-{lang}.html"
+    template_path = Path("web/templates") / lang_template
+    
+    if template_path.exists():
+        return lang_template
+    else:
+        return "index.html"  # Fallback to default
+
 # API Routes with Logging
 
 @app.get("/", response_class=HTMLResponse)
-async def dashboard(request: Request):
-    """Main dashboard page."""
+@app.get("/index-{lang}.html", response_class=HTMLResponse)
+async def dashboard(request: Request, lang: str = None):
+    """Main dashboard page with language support."""
     logger.debug("Dashboard page requested", LogCategory.API, {
         'client_ip': request.client.host,
-        'user_agent': request.headers.get('user-agent', 'unknown')
+        'user_agent': request.headers.get('user-agent', 'unknown'),
+        'language': lang
     })
-    return templates.TemplateResponse("index.html", {"request": request})
+    
+    template_file = get_template_path(request)
+    return templates.TemplateResponse(template_file, {"request": request})
 
 @app.get("/api/devices")
 async def list_devices() -> List[DeviceInfo]:
@@ -474,35 +509,135 @@ async def get_job(job_id: str) -> Dict:
     
     return job_status.jobs[job_id]
 
+# NEW: Enhanced job log endpoints with different sources
 @app.get("/api/jobs/{job_id}/logs")
-async def get_job_logs(job_id: str) -> List[Dict]:
-    """Get job logs with filtering support."""
+async def get_job_logs(job_id: str, source: str = "buffer") -> List[Dict]:
+    """Get job logs with different sources."""
     if job_id not in job_status.jobs:
         raise HTTPException(status_code=404, detail="Job not found")
     
-    # Get logs from both job-specific storage and global log buffer
-    job_logs = job_status.jobs[job_id]['logs']
+    if source == "file":
+        # Get logs from dedicated job file
+        log_buffer = get_log_buffer()
+        if log_buffer:
+            job_logger = log_buffer.get_job_logger(job_id)
+            if job_logger:
+                entries = job_logger.get_log_content()
+                logger.debug("Job file logs requested", LogCategory.API, {
+                    'job_id': job_id,
+                    'log_count': len(entries)
+                })
+                return entries
+        
+        raise HTTPException(status_code=404, detail="Job log file not found")
     
-    # Also get logs from the global log buffer
-    log_buffer = get_log_buffer()
-    if log_buffer:
-        buffer_logs = log_buffer.get_job_logs(job_id)
-        # Convert LogEntry objects to dictionaries
-        for log_entry in buffer_logs:
-            job_logs.append({
-                'timestamp': log_entry.timestamp,
-                'level': log_entry.level,
-                'message': log_entry.message,
-                'category': log_entry.category,
-                'component': log_entry.component
-            })
+    elif source == "errors":
+        # Get only error logs from job file
+        log_buffer = get_log_buffer()
+        if log_buffer:
+            job_logger = log_buffer.get_job_logger(job_id)
+            if job_logger:
+                entries = job_logger.get_error_content()
+                logger.debug("Job error logs requested", LogCategory.API, {
+                    'job_id': job_id,
+                    'error_count': len(entries)
+                })
+                return entries
+        
+        raise HTTPException(status_code=404, detail="Job error log file not found")
     
-    logger.debug("Job logs requested", LogCategory.API, {
+    else:
+        # Default: Get logs from buffer (original behavior)
+        job_logs = job_status.jobs[job_id]['logs']
+        
+        # Also get logs from the global log buffer
+        log_buffer = get_log_buffer()
+        if log_buffer:
+            buffer_logs = log_buffer.get_job_logs(job_id)
+            # Convert LogEntry objects to dictionaries
+            for log_entry in buffer_logs:
+                job_logs.append({
+                    'timestamp': log_entry.timestamp,
+                    'level': log_entry.level,
+                    'message': log_entry.message,
+                    'category': log_entry.category,
+                    'component': log_entry.component
+                })
+        
+        logger.debug("Job buffer logs requested", LogCategory.API, {
+            'job_id': job_id,
+            'log_count': len(job_logs)
+        })
+        
+        return job_logs
+
+@app.get("/api/jobs/{job_id}/log-files")
+async def get_job_log_files(job_id: str) -> Dict[str, Any]:
+    """Get information about job log files."""
+    if job_id not in job_status.jobs:
+        raise HTTPException(status_code=404, detail="Job not found")
+    
+    log_files = get_job_log_files(job_id)
+    
+    result = {
         'job_id': job_id,
-        'log_count': len(job_logs)
+        'files': {}
+    }
+    
+    for file_type, file_path in log_files.items():
+        if file_path and file_path.exists():
+            stat = file_path.stat()
+            result['files'][file_type] = {
+                'path': str(file_path),
+                'size_bytes': stat.st_size,
+                'size_mb': round(stat.st_size / (1024 * 1024), 2),
+                'modified': datetime.fromtimestamp(stat.st_mtime).isoformat(),
+                'exists': True
+            }
+        else:
+            result['files'][file_type] = {
+                'path': str(file_path) if file_path else None,
+                'exists': False
+            }
+    
+    logger.debug("Job log files info requested", LogCategory.API, {
+        'job_id': job_id,
+        'files_available': [k for k, v in result['files'].items() if v['exists']]
     })
     
-    return job_logs
+    return result
+
+@app.get("/api/jobs/{job_id}/download-log")
+async def download_job_log(job_id: str, log_type: str = "main"):
+    """Download job log file."""
+    if job_id not in job_status.jobs:
+        raise HTTPException(status_code=404, detail="Job not found")
+    
+    log_buffer = get_log_buffer()
+    if not log_buffer:
+        raise HTTPException(status_code=503, detail="Log buffer not available")
+    
+    if log_type == "main":
+        log_file = log_buffer.get_job_log_file(job_id)
+    elif log_type == "error":
+        log_file = log_buffer.get_job_error_file(job_id)
+    else:
+        raise HTTPException(status_code=400, detail="Invalid log type. Use 'main' or 'error'")
+    
+    if not log_file or not log_file.exists():
+        raise HTTPException(status_code=404, detail=f"Job {log_type} log file not found")
+    
+    logger.info("Job log file downloaded", LogCategory.API, {
+        'job_id': job_id,
+        'log_type': log_type,
+        'file_size': log_file.stat().st_size
+    })
+    
+    return FileResponse(
+        path=str(log_file),
+        filename=f"kassia_job_{job_id}_{log_type}.log",
+        media_type="text/plain"
+    )
 
 @app.delete("/api/jobs/{job_id}")
 async def cancel_job(job_id: str) -> Dict[str, str]:
@@ -518,6 +653,9 @@ async def cancel_job(job_id: str) -> Dict[str, str]:
         status="cancelled", 
         completed_at=datetime.now().isoformat()
     )
+    
+    # Finalize job logging
+    finalize_job_logging(job_id, "cancelled")
     
     logger.info("Job cancelled", LogCategory.WEBUI, {
         'job_id': job_id,
@@ -656,273 +794,280 @@ async def websocket_endpoint(websocket: WebSocket):
         if websocket in job_status.active_connections:
             job_status.active_connections.remove(websocket)
 
-# Background job execution with comprehensive logging
+# Background job execution with comprehensive logging and job-specific files
 async def execute_build_job_with_logging(job_id: str, device: str, os_id: int, 
                                        skip_drivers: bool, skip_updates: bool):
-    """Execute build job in background with detailed logging."""
+    """Execute build job in background with detailed logging and job-specific log files."""
     
     # Set up job-specific logger context
     job_logger = get_logger("kassia.webui.build")
-    job_logger.set_context(job_id=job_id, device=device, os_id=os_id)
     
-    job_logger.log_operation_start("build_job")
-    job_start_time = time.time()
-    
-    try:
-        # Update job status
-        job_status.update_job(
-            job_id,
-            status="running",
-            started_at=datetime.now().isoformat(),
-            current_step="Loading configuration",
-            step_number=1,
-            progress=10
-        )
+    # Create job context for enhanced logging
+    with job_logger.create_job_context(job_id):
+        job_logger.log_operation_start("build_job")
+        job_start_time = time.time()
         
-        job_status.add_job_log(job_id, "Build job started", "INFO")
-        job_logger.info("Build job execution started", LogCategory.WORKFLOW)
-        
-        # Load configuration
-        job_logger.info("Loading configuration", LogCategory.CONFIG)
-        kassia_config = ConfigLoader.create_kassia_config(device, os_id)
-        
-        job_status.update_job(
-            job_id,
-            current_step="Discovering assets",
-            step_number=2,
-            progress=20
-        )
-        
-        job_status.add_job_log(job_id, "Configuration loaded successfully", "INFO")
-        job_logger.info("Configuration loaded", LogCategory.CONFIG, {
-            'device_id': kassia_config.device.deviceId,
-            'selected_os': kassia_config.selectedOsId
-        })
-        
-        # Create asset provider with proper build config
-        assets_path = Path("assets")
-        build_config_dict = {
-            'driverRoot': kassia_config.build.driverRoot,
-            'updateRoot': kassia_config.build.updateRoot,
-            'sbiRoot': kassia_config.build.sbiRoot,
-            'yunonaPath': kassia_config.build.yunonaPath,
-            'osWimMap': kassia_config.build.osWimMap
-        }
-        
-        provider = LocalAssetProvider(assets_path, build_config=build_config_dict)
-        
-        # Discover assets
-        job_logger.info("Discovering assets", LogCategory.ASSET)
-        sbi_asset = await provider.get_sbi(os_id)
-        drivers = await provider.get_drivers(device, os_id)
-        updates = await provider.get_updates(os_id)
-        
-        job_status.add_job_log(job_id, f"Assets discovered: SBI={bool(sbi_asset)}, Drivers={len(drivers)}, Updates={len(updates)}", "INFO")
-        job_logger.info("Asset discovery completed", LogCategory.ASSET, {
-            'sbi_found': bool(sbi_asset),
-            'drivers_count': len(drivers),
-            'updates_count': len(updates)
-        })
-        
-        if not sbi_asset:
-            error_msg = "No SBI found for OS ID"
+        try:
+            # Update job status
+            job_status.update_job(
+                job_id,
+                status="running",
+                started_at=datetime.now().isoformat(),
+                current_step="Loading configuration",
+                step_number=1,
+                progress=10
+            )
+            
+            job_status.add_job_log(job_id, "Build job started", "INFO")
+            job_logger.info("Build job execution started", LogCategory.WORKFLOW)
+            
+            # Load configuration
+            job_logger.info("Loading configuration", LogCategory.CONFIG)
+            kassia_config = ConfigLoader.create_kassia_config(device, os_id)
+            
+            job_status.update_job(
+                job_id,
+                current_step="Discovering assets",
+                step_number=2,
+                progress=20
+            )
+            
+            job_status.add_job_log(job_id, "Configuration loaded successfully", "INFO")
+            job_logger.info("Configuration loaded", LogCategory.CONFIG, {
+                'device_id': kassia_config.device.deviceId,
+                'selected_os': kassia_config.selectedOsId
+            })
+            
+            # Create asset provider with proper build config
+            assets_path = Path("assets")
+            build_config_dict = {
+                'driverRoot': kassia_config.build.driverRoot,
+                'updateRoot': kassia_config.build.updateRoot,
+                'sbiRoot': kassia_config.build.sbiRoot,
+                'yunonaPath': kassia_config.build.yunonaPath,
+                'osWimMap': kassia_config.build.osWimMap
+            }
+            
+            provider = LocalAssetProvider(assets_path, build_config=build_config_dict)
+            
+            # Discover assets
+            job_logger.info("Discovering assets", LogCategory.ASSET)
+            sbi_asset = await provider.get_sbi(os_id)
+            drivers = await provider.get_drivers(device, os_id)
+            updates = await provider.get_updates(os_id)
+            
+            job_status.add_job_log(job_id, f"Assets discovered: SBI={bool(sbi_asset)}, Drivers={len(drivers)}, Updates={len(updates)}", "INFO")
+            job_logger.info("Asset discovery completed", LogCategory.ASSET, {
+                'sbi_found': bool(sbi_asset),
+                'drivers_count': len(drivers),
+                'updates_count': len(updates)
+            })
+            
+            if not sbi_asset:
+                error_msg = "No SBI found for OS ID"
+                job_status.update_job(
+                    job_id,
+                    status="failed",
+                    error=error_msg,
+                    completed_at=datetime.now().isoformat()
+                )
+                job_status.add_job_log(job_id, error_msg, "ERROR")
+                job_logger.error(error_msg, LogCategory.ASSET)
+                return
+            
+            job_status.update_job(
+                job_id,
+                current_step="Preparing WIM",
+                step_number=3,
+                progress=30,
+                results={
+                    'sbi_found': True,
+                    'drivers_count': len(drivers),
+                    'updates_count': len(updates)
+                }
+            )
+            
+            # Initialize WIM workflow
+            job_logger.info("Initializing WIM workflow", LogCategory.WIM)
+            wim_handler = WimHandler()
+            workflow = WimWorkflow(wim_handler)
+            
+            # Prepare WIM
+            job_status.add_job_log(job_id, "Copying WIM to temporary location", "INFO")
+            temp_dir = Path(kassia_config.build.tempPath)
+            temp_wim = await workflow.prepare_wim_for_modification(sbi_asset.path, temp_dir)
+            
+            job_logger.info("WIM preparation completed", LogCategory.WIM, {
+                'temp_wim': str(temp_wim)
+            })
+            
+            job_status.update_job(
+                job_id,
+                current_step="Mounting WIM",
+                step_number=4,
+                progress=40
+            )
+            
+            # Mount WIM
+            job_status.add_job_log(job_id, "Mounting WIM for modification", "INFO")
+            mount_point = Path(kassia_config.build.mountPoint)
+            mount_info = await workflow.mount_wim_for_modification(temp_wim, mount_point)
+            
+            job_logger.info("WIM mounted successfully", LogCategory.WIM, {
+                'mount_point': str(mount_point),
+                'read_write': mount_info.read_write
+            })
+            
+            # Driver integration
+            if not skip_drivers and drivers:
+                job_status.update_job(
+                    job_id,
+                    current_step=f"Integrating {len(drivers)} drivers",
+                    step_number=5,
+                    progress=50
+                )
+                
+                job_status.add_job_log(job_id, f"Starting driver integration ({len(drivers)} drivers)", "INFO")
+                job_logger.info("Starting driver integration", LogCategory.DRIVER, {
+                    'driver_count': len(drivers)
+                })
+                
+                driver_integrator = DriverIntegrator()
+                driver_manager = DriverIntegrationManager(driver_integrator)
+                
+                driver_result = await driver_manager.integrate_drivers_for_device(
+                    drivers, mount_point, Path(kassia_config.build.yunonaPath),
+                    kassia_config.device.deviceId, kassia_config.selectedOsId
+                )
+                
+                job_status.update_job(
+                    job_id,
+                    results={
+                        **job_status.jobs[job_id]['results'],
+                        'driver_integration': driver_result
+                    }
+                )
+                
+                success_msg = f"Driver integration completed: {driver_result['successful_count']}/{len(drivers)} successful"
+                job_status.add_job_log(job_id, success_msg, "INFO")
+                job_logger.info("Driver integration completed", LogCategory.DRIVER, driver_result)
+            
+            # Update integration
+            if not skip_updates and updates:
+                job_status.update_job(
+                    job_id,
+                    current_step=f"Integrating {len(updates)} updates",
+                    step_number=6,
+                    progress=70
+                )
+                
+                job_status.add_job_log(job_id, f"Starting update integration ({len(updates)} updates)", "INFO")
+                job_logger.info("Starting update integration", LogCategory.UPDATE, {
+                    'update_count': len(updates)
+                })
+                
+                update_integrator = UpdateIntegrator()
+                update_manager = UpdateIntegrationManager(update_integrator)
+                
+                update_result = await update_manager.integrate_updates_for_os(
+                    updates, mount_point, Path(kassia_config.build.yunonaPath), kassia_config.selectedOsId
+                )
+                
+                job_status.update_job(
+                    job_id,
+                    results={
+                        **job_status.jobs[job_id]['results'],
+                        'update_integration': update_result
+                    }
+                )
+                
+                success_msg = f"Update integration completed: {update_result['successful_count']}/{len(updates)} successful"
+                job_status.add_job_log(job_id, success_msg, "INFO")
+                job_logger.info("Update integration completed", LogCategory.UPDATE, update_result)
+            
+            # Export WIM
+            job_status.update_job(
+                job_id,
+                current_step="Exporting WIM",
+                step_number=7,
+                progress=85
+            )
+            
+            job_status.add_job_log(job_id, "Creating final WIM image", "INFO")
+            job_logger.info("Starting WIM export", LogCategory.WIM)
+            
+            export_dir = Path(kassia_config.build.exportPath)
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            export_name = f"{kassia_config.selectedOsId}_{kassia_config.device.deviceId}_{timestamp}.wim"
+            export_path = export_dir / export_name
+            
+            final_wim = await workflow.finalize_and_export_wim(
+                mount_point, export_path, 
+                export_name=f"Kassia {kassia_config.device.deviceId} OS{kassia_config.selectedOsId}"
+            )
+            
+            # Cleanup
+            job_status.update_job(
+                job_id,
+                current_step="Cleanup",
+                step_number=8,
+                progress=95
+            )
+            
+            job_status.add_job_log(job_id, "Cleaning up temporary files", "INFO")
+            await workflow.cleanup_workflow(keep_export=True)
+            
+            # Complete
+            final_size = final_wim.stat().st_size
+            final_size_mb = final_size / (1024 * 1024)
+            
+            job_duration = time.time() - job_start_time
+            
+            job_status.update_job(
+                job_id,
+                status="completed",
+                current_step="Completed",
+                step_number=9,
+                progress=100,
+                completed_at=datetime.now().isoformat(),
+                results={
+                    **job_status.jobs[job_id]['results'],
+                    'final_wim_path': str(final_wim),
+                    'final_wim_size_mb': final_size_mb,
+                    'total_duration_seconds': job_duration
+                }
+            )
+            
+            success_msg = f"Build completed successfully! Final WIM: {final_size_mb:.1f} MB"
+            job_status.add_job_log(job_id, success_msg, "INFO")
+            job_logger.log_operation_success("build_job", job_duration, {
+                'final_wim': str(final_wim),
+                'final_size_mb': final_size_mb
+            })
+            
+            # Finalize job logging
+            finalize_job_logging(job_id, "completed")
+            
+        except Exception as e:
+            job_duration = time.time() - job_start_time
+            error_msg = str(e)
+            
+            job_logger.log_operation_failure("build_job", error_msg, job_duration)
+            
             job_status.update_job(
                 job_id,
                 status="failed",
                 error=error_msg,
                 completed_at=datetime.now().isoformat()
             )
-            job_status.add_job_log(job_id, error_msg, "ERROR")
-            job_logger.error(error_msg, LogCategory.ASSET)
-            return
-        
-        job_status.update_job(
-            job_id,
-            current_step="Preparing WIM",
-            step_number=3,
-            progress=30,
-            results={
-                'sbi_found': True,
-                'drivers_count': len(drivers),
-                'updates_count': len(updates)
-            }
-        )
-        
-        # Initialize WIM workflow
-        job_logger.info("Initializing WIM workflow", LogCategory.WIM)
-        wim_handler = WimHandler()
-        workflow = WimWorkflow(wim_handler)
-        
-        # Prepare WIM
-        job_status.add_job_log(job_id, "Copying WIM to temporary location", "INFO")
-        temp_dir = Path(kassia_config.build.tempPath)
-        temp_wim = await workflow.prepare_wim_for_modification(sbi_asset.path, temp_dir)
-        
-        job_logger.info("WIM preparation completed", LogCategory.WIM, {
-            'temp_wim': str(temp_wim)
-        })
-        
-        job_status.update_job(
-            job_id,
-            current_step="Mounting WIM",
-            step_number=4,
-            progress=40
-        )
-        
-        # Mount WIM
-        job_status.add_job_log(job_id, "Mounting WIM for modification", "INFO")
-        mount_point = Path(kassia_config.build.mountPoint)
-        mount_info = await workflow.mount_wim_for_modification(temp_wim, mount_point)
-        
-        job_logger.info("WIM mounted successfully", LogCategory.WIM, {
-            'mount_point': str(mount_point),
-            'read_write': mount_info.read_write
-        })
-        
-        # Driver integration
-        if not skip_drivers and drivers:
-            job_status.update_job(
-                job_id,
-                current_step=f"Integrating {len(drivers)} drivers",
-                step_number=5,
-                progress=50
-            )
             
-            job_status.add_job_log(job_id, f"Starting driver integration ({len(drivers)} drivers)", "INFO")
-            job_logger.info("Starting driver integration", LogCategory.DRIVER, {
-                'driver_count': len(drivers)
-            })
+            job_status.add_job_log(job_id, f"Build failed: {error_msg}", "ERROR")
             
-            driver_integrator = DriverIntegrator()
-            driver_manager = DriverIntegrationManager(driver_integrator)
+            # Finalize job logging with error
+            finalize_job_logging(job_id, "failed", error_msg)
             
-            driver_result = await driver_manager.integrate_drivers_for_device(
-                drivers, mount_point, Path(kassia_config.build.yunonaPath),
-                kassia_config.device.deviceId, kassia_config.selectedOsId
-            )
-            
-            job_status.update_job(
-                job_id,
-                results={
-                    **job_status.jobs[job_id]['results'],
-                    'driver_integration': driver_result
-                }
-            )
-            
-            success_msg = f"Driver integration completed: {driver_result['successful_count']}/{len(drivers)} successful"
-            job_status.add_job_log(job_id, success_msg, "INFO")
-            job_logger.info("Driver integration completed", LogCategory.DRIVER, driver_result)
-        
-        # Update integration
-        if not skip_updates and updates:
-            job_status.update_job(
-                job_id,
-                current_step=f"Integrating {len(updates)} updates",
-                step_number=6,
-                progress=70
-            )
-            
-            job_status.add_job_log(job_id, f"Starting update integration ({len(updates)} updates)", "INFO")
-            job_logger.info("Starting update integration", LogCategory.UPDATE, {
-                'update_count': len(updates)
-            })
-            
-            update_integrator = UpdateIntegrator()
-            update_manager = UpdateIntegrationManager(update_integrator)
-            
-            update_result = await update_manager.integrate_updates_for_os(
-                updates, mount_point, Path(kassia_config.build.yunonaPath), kassia_config.selectedOsId
-            )
-            
-            job_status.update_job(
-                job_id,
-                results={
-                    **job_status.jobs[job_id]['results'],
-                    'update_integration': update_result
-                }
-            )
-            
-            success_msg = f"Update integration completed: {update_result['successful_count']}/{len(updates)} successful"
-            job_status.add_job_log(job_id, success_msg, "INFO")
-            job_logger.info("Update integration completed", LogCategory.UPDATE, update_result)
-        
-        # Export WIM
-        job_status.update_job(
-            job_id,
-            current_step="Exporting WIM",
-            step_number=7,
-            progress=85
-        )
-        
-        job_status.add_job_log(job_id, "Creating final WIM image", "INFO")
-        job_logger.info("Starting WIM export", LogCategory.WIM)
-        
-        export_dir = Path(kassia_config.build.exportPath)
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        export_name = f"{kassia_config.selectedOsId}_{kassia_config.device.deviceId}_{timestamp}.wim"
-        export_path = export_dir / export_name
-        
-        final_wim = await workflow.finalize_and_export_wim(
-            mount_point, export_path, 
-            export_name=f"Kassia {kassia_config.device.deviceId} OS{kassia_config.selectedOsId}"
-        )
-        
-        # Cleanup
-        job_status.update_job(
-            job_id,
-            current_step="Cleanup",
-            step_number=8,
-            progress=95
-        )
-        
-        job_status.add_job_log(job_id, "Cleaning up temporary files", "INFO")
-        await workflow.cleanup_workflow(keep_export=True)
-        
-        # Complete
-        final_size = final_wim.stat().st_size
-        final_size_mb = final_size / (1024 * 1024)
-        
-        job_duration = time.time() - job_start_time
-        
-        job_status.update_job(
-            job_id,
-            status="completed",
-            current_step="Completed",
-            step_number=9,
-            progress=100,
-            completed_at=datetime.now().isoformat(),
-            results={
-                **job_status.jobs[job_id]['results'],
-                'final_wim_path': str(final_wim),
-                'final_wim_size_mb': final_size_mb,
-                'total_duration_seconds': job_duration
-            }
-        )
-        
-        success_msg = f"Build completed successfully! Final WIM: {final_size_mb:.1f} MB"
-        job_status.add_job_log(job_id, success_msg, "INFO")
-        job_logger.log_operation_success("build_job", job_duration, {
-            'final_wim': str(final_wim),
-            'final_size_mb': final_size_mb
-        })
-        
-    except Exception as e:
-        job_duration = time.time() - job_start_time
-        error_msg = str(e)
-        
-        job_logger.log_operation_failure("build_job", error_msg, job_duration)
-        
-        job_status.update_job(
-            job_id,
-            status="failed",
-            error=error_msg,
-            completed_at=datetime.now().isoformat()
-        )
-        
-        job_status.add_job_log(job_id, f"Build failed: {error_msg}", "ERROR")
-        
-    finally:
-        job_logger.clear_context()
+            # Re-raise to be handled by job context
+            raise
 
 # Health check
 @app.get("/api/health")
@@ -964,6 +1109,7 @@ if __name__ == "__main__":
     print("📊 Dashboard: http://localhost:8000")
     print("📋 API Docs: http://localhost:8000/docs")
     print("📜 Logs: runtime/logs/")
+    print("📁 Job Logs: runtime/logs/job_*.log")
     print("=" * 60)
     
     uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)
