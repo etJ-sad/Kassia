@@ -1,6 +1,42 @@
 {
-  "nav_dashboard": "Панель",
-  "nav_build": "Новая сборка",
-  "nav_assets": "Ресурсы",
-  "nav_jobs": "Jobs"
+"build_create_new": "Создать новую сборку",
+"build_device_config": "Конфигурация устройства",
+"build_operating_system": "Операционная система",
+"select_device": "Выберите устройство...",
+"select_os": "Выберите ОС...",
+"skip_drivers": "Пропустить интеграцию драйверов",
+"skip_updates": "Пропустить интеграцию обновлений",
+"build_preview": "Предварительный просмотр сборки",
+"device_label": "Устройство:",
+"os_label": "ОС:",
+"wim_path_label": "Путь к WIM:",
+"sbi_label": "SBI:",
+"drivers_label": "Драйверы:",
+"updates_label": "Обновления:",
+"start_build": "Начать сборку",
+
+"asset_management": "Управление ресурсами",
+"device_filter": "Фильтр по устройствам",
+"os_filter": "Фильтр по ОС",
+"all_devices": "Все устройства",
+"all_os": "Все ОС",
+"refresh": "Обновить",
+"select_device_os_assets": "Выберите устройство и ОС для отображения доступных ресурсов",
+
+"build_jobs": "Задания сборки",
+"no_build_jobs": "Задания сборки не найдены. Начните первую сборку, чтобы увидеть её здесь.",
+
+"loading": "Загрузка...",
+"error_network": "Ошибка сетевого подключения",
+"error_server": "Ошибка сервера – попробуйте снова",
+
+"language_switched": "Язык переключен на русский",
+"build_started": "Сборка успешно начата!",
+"build_completed": "Сборка успешно завершена!",
+"build_failed": "Ошибка сборки",
+"job_cancelled": "Задание успешно отменено",
+
+"validation_device_required": "Необходимо выбрать устройство",
+"validation_os_required": "Необходимо выбрать операционную систему"
+
 }

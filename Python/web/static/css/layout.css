@@ -1,0 +1,386 @@
+/* web/static/css/layout.css */
+/* Siemens Kassia WebUI - Layout */
+
+/* Header */
+.siemens-header {
+    background: var(--siemens-deep-blue);
+    position: relative;
+    z-index: 1000;
+}
+
+.header-main {
+    padding: 16px 0;
+}
+
+.header-main-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.siemens-logo {
+    color: var(--siemens-white);
+    font-size: 24px;
+    font-weight: 300;
+    letter-spacing: 2px;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transition: opacity var(--siemens-transition-fast);
+}
+
+.siemens-logo:hover {
+    opacity: 0.8;
+}
+
+.logo-icon {
+    width: 32px;
+    height: 32px;
+    background: var(--siemens-gradient-primary);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--siemens-white);
+}
+
+.header-search {
+    flex: 1;
+    max-width: 400px;
+    margin: 0 40px;
+}
+
+/* Navigation */
+.main-navigation {
+    background: var(--siemens-deep-blue);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.nav-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+    display: flex;
+    gap: 48px;
+}
+
+.nav-item {
+    color: var(--siemens-white);
+    text-decoration: none;
+    padding: 16px 0;
+    font-size: 15px;
+    font-weight: 400;
+    position: relative;
+    transition: opacity var(--siemens-transition-fast);
+    border-bottom: 3px solid transparent;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+}
+
+.nav-item:hover {
+    opacity: 0.8;
+}
+
+.nav-item.active {
+    border-bottom-color: var(--siemens-bright-petrol);
+}
+
+/* Hero Section */
+.hero-section {
+    background: var(--siemens-gradient-hero);
+    color: var(--siemens-white);
+    padding: 80px 0 120px;
+    position: relative;
+    overflow: hidden;
+}
+
+.hero-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+    position: relative;
+    z-index: 2;
+}
+
+.hero-title {
+    font-size: 64px;
+    font-weight: 300;
+    line-height: 1.1;
+    margin-bottom: 24px;
+    letter-spacing: -1px;
+}
+
+.hero-subtitle {
+    font-size: 24px;
+    font-weight: 300;
+    margin-bottom: 32px;
+    opacity: 0.9;
+    max-width: 600px;
+    line-height: 1.4;
+}
+
+.hero-description {
+    font-size: 18px;
+    margin-bottom: 48px;
+    opacity: 0.8;
+    max-width: 700px;
+    line-height: 1.6;
+}
+
+.hero-cta {
+    background: var(--siemens-bright-petrol);
+    color: var(--siemens-deep-blue);
+    padding: 16px 32px;
+    border: none;
+    border-radius: var(--siemens-radius-md);
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    transition: all var(--siemens-transition-normal);
+    box-shadow: var(--siemens-shadow-md);
+}
+
+.hero-cta:hover {
+    background: var(--siemens-petrol);
+    color: var(--siemens-white);
+    transform: translateY(-2px);
+    box-shadow: var(--siemens-shadow-lg);
+}
+
+/* Main Content */
+.main-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 60px 20px;
+}
+
+/* Tab Navigation */
+.tab-navigation {
+    display: flex;
+    background: var(--siemens-light-gray);
+    border-radius: var(--siemens-radius-lg);
+    padding: 8px;
+    margin-bottom: 40px;
+    overflow-x: auto;
+}
+
+.tab-btn {
+    background: none;
+    border: none;
+    padding: 16px 24px;
+    border-radius: var(--siemens-radius-md);
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--siemens-transition-normal);
+    color: var(--siemens-text-secondary);
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--siemens-font-family);
+}
+
+.tab-btn:hover {
+    background: rgba(0, 153, 153, 0.1);
+    color: var(--siemens-petrol);
+}
+
+.tab-btn.active {
+    background: var(--siemens-white);
+    color: var(--siemens-petrol);
+    box-shadow: var(--siemens-shadow-sm);
+}
+
+/* Tab Content */
+.tab-content {
+    display: none;
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Grid Layouts */
+.status-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 24px;
+    margin-bottom: 32px;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+}
+
+.form-grid-three {
+    display: grid;
+    grid-template-columns: 1fr 1fr auto;
+    gap: 16px;
+}
+
+.asset-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 15px;
+}
+
+/* Asset Item */
+.asset-item {
+    background: white;
+    border: 1px solid var(--siemens-medium-gray);
+    border-radius: var(--siemens-radius-md);
+    padding: 15px;
+    transition: all var(--siemens-transition-normal);
+}
+
+.asset-item.valid {
+    border-left: 4px solid #28a745;
+}
+
+.asset-item.invalid {
+    border-left: 4px solid #dc3545;
+}
+
+.asset-item:hover {
+    box-shadow: var(--siemens-shadow-sm);
+    transform: translateY(-2px);
+}
+
+.asset-name {
+    margin-bottom: 8px;
+    color: var(--siemens-deep-blue);
+    font-weight: 600;
+}
+
+.asset-type {
+    font-size: 12px;
+    background: var(--siemens-light-gray);
+    padding: 4px 8px;
+    border-radius: var(--siemens-radius-sm);
+    margin-bottom: 8px;
+    display: inline-block;
+}
+
+.asset-path {
+    font-family: monospace;
+    font-size: 12px;
+    color: var(--siemens-text-secondary);
+    margin-bottom: 10px;
+    word-break: break-all;
+}
+
+.asset-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.asset-size {
+    font-size: 14px;
+    color: var(--siemens-text-secondary);
+}
+
+.asset-status {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: bold;
+    color: white;
+}
+
+.asset-status.valid {
+    background: #28a745;
+}
+
+.asset-status.invalid {
+    background: #dc3545;
+}
+
+/* Job Item */
+.job-item {
+    background: white;
+    border: 1px solid var(--siemens-medium-gray);
+    border-radius: var(--siemens-radius-md);
+    padding: 20px;
+    margin-bottom: 15px;
+    transition: all var(--siemens-transition-normal);
+}
+
+.job-item:hover {
+    box-shadow: var(--siemens-shadow-sm);
+}
+
+.job-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 15px;
+}
+
+.job-title {
+    margin: 0;
+    font-size: 18px;
+    color: var(--siemens-deep-blue);
+}
+
+.job-id {
+    font-size: 12px;
+    color: var(--siemens-text-light);
+    font-family: monospace;
+}
+
+.job-meta {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.job-meta-item {
+    display: flex;
+    flex-direction: column;
+}
+
+.job-meta-label {
+    font-size: 12px;
+    color: var(--siemens-text-light);
+    font-weight: 500;
+    text-transform: uppercase;
+}
+
+.job-meta-value {
+    font-size: 14px;
+    color: var(--siemens-text-primary);
+}
+
+.job-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+}

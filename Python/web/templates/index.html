@@ -16,566 +16,17 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
-    <style>
-/* Siemens Kassia WebUI Styles */
-
-:root {
-    /* Siemens Official Colors */
-    --siemens-petrol: #009999;
-    --siemens-dark-petrol: #007A7A;
-    --siemens-light-petrol: #B3DFDF;
-    --siemens-bright-petrol: #00E6DC;
-    --siemens-deep-blue: #000028;
-    --siemens-dark-blue: #001122;
-    --siemens-white: #FFFFFF;
-    --siemens-light-gray: #F5F5F5;
-    --siemens-medium-gray: #E5E5E5;
-    --siemens-dark-gray: #333333;
-    --siemens-text-primary: #1A1A1A;
-    --siemens-text-secondary: #666666;
-    --siemens-text-light: #999999;
-    
-    /* Siemens Gradients */
-    --siemens-gradient-primary: linear-gradient(135deg, var(--siemens-petrol) 0%, var(--siemens-bright-petrol) 100%);
-    --siemens-gradient-dark: linear-gradient(135deg, var(--siemens-deep-blue) 0%, var(--siemens-dark-blue) 100%);
-    --siemens-gradient-hero: linear-gradient(135deg, var(--siemens-deep-blue) 0%, rgba(0, 153, 153, 0.8) 100%);
-    
-    /* Shadows */
-    --siemens-shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.1);
-    --siemens-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.15);
-    --siemens-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.2);
-    
-    /* Border Radius */
-    --siemens-radius-sm: 4px;
-    --siemens-radius-md: 8px;
-    --siemens-radius-lg: 12px;
-    
-    /* Typography */
-    --siemens-font-family: 'Inter', 'Siemens Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-}
-
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
-
-body {
-    font-family: var(--siemens-font-family);
-    background-color: var(--siemens-white);
-    color: var(--siemens-text-primary);
-    line-height: 1.6;
-    font-size: 16px;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-}
-
-/* Siemens Header Structure */
-.siemens-header {
-    background: var(--siemens-deep-blue);
-    position: relative;
-    z-index: 1000;
-}
-
-.header-main {
-    padding: 16px 0;
-}
-
-.header-main-content {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 0 20px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-}
-
-.siemens-logo {
-    color: var(--siemens-white);
-    font-size: 24px;
-    font-weight: 300;
-    letter-spacing: 2px;
-    text-decoration: none;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-
-.logo-icon {
-    width: 32px;
-    height: 32px;
-    background: var(--siemens-gradient-primary);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 600;
-    font-size: 14px;
-    color: var(--siemens-white);
-}
-
-.header-search {
-    flex: 1;
-    max-width: 400px;
-    margin: 0 40px;
-}
-
-.search-container {
-    position: relative;
-}
-
-.search-input {
-    width: 100%;
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: var(--siemens-radius-md);
-    padding: 12px 44px 12px 16px;
-    color: var(--siemens-white);
-    font-size: 14px;
-    transition: all 0.3s;
-}
-
-.search-input::placeholder {
-    color: rgba(255, 255, 255, 0.7);
-}
-
-.language-selector {
-    display: flex;
-    gap: 4px;
-}
-
-.lang-btn {
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    color: var(--siemens-white);
-    padding: 4px 8px;
-    border-radius: var(--siemens-radius-sm);
-    font-size: 11px;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
-.lang-btn:hover, .lang-btn.active {
-    background: var(--siemens-bright-petrol);
-    color: var(--siemens-deep-blue);
-    border-color: var(--siemens-bright-petrol);
-}
-
-/* Navigation */
-.main-navigation {
-    background: var(--siemens-deep-blue);
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.nav-content {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 0 20px;
-    display: flex;
-    gap: 48px;
-}
-
-.nav-item {
-    color: var(--siemens-white);
-    text-decoration: none;
-    padding: 16px 0;
-    font-size: 15px;
-    font-weight: 400;
-    position: relative;
-    transition: opacity 0.2s;
-    border-bottom: 3px solid transparent;
-    display: flex;
-    align-items: center;
-    cursor: pointer;
-}
-
-.nav-item:hover {
-    opacity: 0.8;
-}
-
-.nav-item.active {
-    border-bottom-color: var(--siemens-bright-petrol);
-}
-
-/* Hero Section */
-.hero-section {
-    background: var(--siemens-gradient-hero);
-    color: var(--siemens-white);
-    padding: 80px 0 120px;
-    position: relative;
-    overflow: hidden;
-}
-
-.hero-content {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 0 20px;
-    position: relative;
-    z-index: 2;
-}
-
-.hero-title {
-    font-size: 64px;
-    font-weight: 300;
-    line-height: 1.1;
-    margin-bottom: 24px;
-    letter-spacing: -1px;
-}
-
-.hero-subtitle {
-    font-size: 24px;
-    font-weight: 300;
-    margin-bottom: 32px;
-    opacity: 0.9;
-    max-width: 600px;
-    line-height: 1.4;
-}
-
-.hero-description {
-    font-size: 18px;
-    margin-bottom: 48px;
-    opacity: 0.8;
-    max-width: 700px;
-    line-height: 1.6;
-}
-
-.hero-cta {
-    background: var(--siemens-bright-petrol);
-    color: var(--siemens-deep-blue);
-    padding: 16px 32px;
-    border: none;
-    border-radius: var(--siemens-radius-md);
-    font-size: 16px;
-    font-weight: 600;
-    cursor: pointer;
-    text-decoration: none;
-    display: inline-flex;
-    align-items: center;
-    gap: 12px;
-    transition: all 0.3s;
-    box-shadow: var(--siemens-shadow-md);
-}
-
-.hero-cta:hover {
-    background: var(--siemens-petrol);
-    color: var(--siemens-white);
-    transform: translateY(-2px);
-    box-shadow: var(--siemens-shadow-lg);
-}
-
-/* Main Content */
-.main-content {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 60px 20px;
-}
-
-/* Tab Navigation */
-.tab-navigation {
-    display: flex;
-    background: var(--siemens-light-gray);
-    border-radius: var(--siemens-radius-lg);
-    padding: 8px;
-    margin-bottom: 40px;
-    overflow-x: auto;
-}
-
-.tab-btn {
-    background: none;
-    border: none;
-    padding: 16px 24px;
-    border-radius: var(--siemens-radius-md);
-    font-size: 15px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.3s;
-    color: var(--siemens-text-secondary);
-    white-space: nowrap;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.tab-btn:hover {
-    background: rgba(0, 153, 153, 0.1);
-    color: var(--siemens-petrol);
-}
-
-.tab-btn.active {
-    background: var(--siemens-white);
-    color: var(--siemens-petrol);
-    box-shadow: var(--siemens-shadow-sm);
-}
-
-/* Content Cards */
-.content-card {
-    background: var(--siemens-white);
-    border-radius: var(--siemens-radius-lg);
-    box-shadow: var(--siemens-shadow-sm);
-    margin-bottom: 32px;
-    overflow: hidden;
-    transition: all 0.3s;
-    border: 1px solid var(--siemens-medium-gray);
-}
-
-.card-header {
-    background: var(--siemens-light-gray);
-    padding: 24px 32px;
-    border-bottom: 1px solid var(--siemens-medium-gray);
-    position: relative;
-}
-
-.card-header::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 4px;
-    background: var(--siemens-gradient-primary);
-}
-
-.card-title {
-    font-size: 24px;
-    font-weight: 600;
-    color: var(--siemens-deep-blue);
-    margin: 0;
-    display: flex;
-    align-items: center;
-}
-
-.card-content {
-    padding: 32px;
-}
-
-/* Status Indicators */
-.status-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 24px;
-    margin-bottom: 32px;
-}
-
-.status-card {
-    background: var(--siemens-white);
-    border: 1px solid var(--siemens-medium-gray);
-    border-radius: var(--siemens-radius-lg);
-    padding: 24px;
-    text-align: center;
-    transition: all 0.3s;
-    position: relative;
-    overflow: hidden;
-}
-
-.status-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 3px;
-    background: var(--siemens-gradient-primary);
-}
-
-.status-number {
-    font-size: 48px;
-    font-weight: 300;
-    color: var(--siemens-petrol);
-    margin-bottom: 8px;
-    display: block;
-}
-
-.status-label {
-    font-size: 14px;
-    color: var(--siemens-text-secondary);
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    font-weight: 500;
-}
-
-/* Tab Content */
-.tab-content {
-    display: none;
-}
-
-.tab-content.active {
-    display: block;
-}
-
-/* Form Elements */
-.form-group {
-    margin-bottom: 24px;
-}
-
-.form-label {
-    display: block;
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--siemens-text-primary);
-    margin-bottom: 8px;
-}
-
-.form-control {
-    width: 100%;
-    padding: 12px 16px;
-    border: 2px solid var(--siemens-medium-gray);
-    border-radius: var(--siemens-radius-md);
-    font-size: 16px;
-    transition: all 0.3s;
-    background: var(--siemens-white);
-}
-
-.form-control:focus {
-    outline: none;
-    border-color: var(--siemens-petrol);
-    box-shadow: 0 0 0 3px rgba(0, 153, 153, 0.1);
-}
-
-/* Buttons */
-.btn {
-    padding: 12px 24px;
-    border-radius: var(--siemens-radius-md);
-    font-size: 16px;
-    font-weight: 500;
-    cursor: pointer;
-    text-decoration: none;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    transition: all 0.3s;
-    border: none;
-}
-
-.btn-primary {
-    background: var(--siemens-gradient-primary);
-    color: var(--siemens-white);
-    box-shadow: var(--siemens-shadow-sm);
-}
-
-.btn-primary:hover {
-    background: var(--siemens-dark-petrol);
-    transform: translateY(-2px);
-    box-shadow: var(--siemens-shadow-md);
-}
-
-.btn-secondary {
-    background: var(--siemens-white);
-    color: var(--siemens-petrol);
-    border: 2px solid var(--siemens-petrol);
-}
-
-.btn-secondary:hover {
-    background: var(--siemens-petrol);
-    color: var(--siemens-white);
-}
-
-/* Connection Status */
-.connection-status {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    padding: 12px 20px;
-    border-radius: 24px;
-    font-size: 14px;
-    font-weight: 500;
-    z-index: 10000;
-    box-shadow: var(--siemens-shadow-md);
-    transition: all 0.3s;
-}
-
-.status-online {
-    background: #4caf50;
-    color: white;
-}
-
-.status-offline {
-    background: #f44336;
-    color: white;
-}
-
-/* Loading spinner */
-.loading-spinner {
-    display: inline-block;
-    width: 16px;
-    height: 16px;
-    border: 2px solid rgba(255,255,255,.3);
-    border-radius: 50%;
-    border-top-color: #fff;
-    animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-    to { transform: rotate(360deg); }
-}
-
-/* Toast Notifications */
-.toast-container {
-    position: fixed;
-    top: 80px;
-    right: 20px;
-    z-index: 10000;
-}
-
-.toast {
-    background: white;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    padding: 16px 20px;
-    margin-bottom: 12px;
-    min-width: 320px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    animation: slideIn 0.3s ease-out;
-}
-
-@keyframes slideIn {
-    from {
-        transform: translateX(100%);
-        opacity: 0;
-    }
-    to {
-        transform: translateX(0);
-        opacity: 1;
-    }
-}
-
-.toast.success {
-    border-left: 4px solid #4caf50;
-}
-
-.toast.error {
-    border-left: 4px solid #f44336;
-}
-
-/* Responsive Design */
-@media (max-width: 768px) {
-    .header-main-content {
-        flex-direction: column;
-        gap: 20px;
-        text-align: center;
-    }
-    
-    .hero-title {
-        font-size: 42px;
-    }
-    
-    .main-content {
-        padding: 40px 16px;
-    }
-    
-    .status-grid {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 16px;
-    }
-}
-    </style>
+    <!-- CSS Files -->
+    <link rel="stylesheet" href="/static/css/variables.css">
+    <link rel="stylesheet" href="/static/css/base.css">
+    <link rel="stylesheet" href="/static/css/components.css">
+    <link rel="stylesheet" href="/static/css/layout.css">
+    <link rel="stylesheet" href="/static/css/responsive.css">
 </head>
 <body>
     <!-- Connection Status -->
     <div id="connectionStatus" class="connection-status status-offline">
-        <span>🔌 Connecting...</span>
+        <span data-translate="connection_connecting">🔌 Connecting...</span>
     </div>
 
     <!-- Toast Container -->
@@ -593,7 +44,7 @@ body {
 
                 <div class="header-search">
                     <div class="search-container">
-                        <input type="text" class="search-input" placeholder="Search Kassia documentation..." id="headerSearch">
+                        <input type="text" class="search-input" data-translate-placeholder="search_placeholder" placeholder="Search Kassia documentation..." id="headerSearch">
                     </div>
                 </div>
 
@@ -613,25 +64,25 @@ body {
                     <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16" style="margin-right: 8px;">
                         <path d="M6 1v3H1V1h5zM1 0a1 1 0 0 0-1 1v3a1 1 0 0 0 1 1h5a1 1 0 0 0 1-1V1a1 1 0 0 0-1-1H1zm14 12v3h-5v-3h5zm-5-1a1 1 0 0 0-1 1v3a1 1 0 0 0 1 1h5a1 1 0 0 0 1-1v-3a1 1 0 0 0-1-1h-5zM6 8v7H1V8h5zM1 7a1 1 0 0 0-1 1v7a1 1 0 0 0 1 1h5a1 1 0 0 0 1-1V8a1 1 0 0 0-1-1H1zm14-6v7h-5V1h5zm-5-1a1 1 0 0 0-1 1v7a1 1 0 0 0 1 1h5a1 1 0 0 0 1-1V1a1 1 0 0 0-1-1h-5z"/>
                     </svg>
-                    Dashboard
+                    <span data-translate="nav_dashboard">Dashboard</span>
                 </div>
                 <div class="nav-item" onclick="switchTab('build')">
                     <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16" style="margin-right: 8px;">
                         <path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/>
                     </svg>
-                    New Build
+                    <span data-translate="nav_build">New Build</span>
                 </div>
                 <div class="nav-item" onclick="switchTab('assets')">
                     <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16" style="margin-right: 8px;">
                         <path d="M1.5 0A1.5 1.5 0 0 0 0 1.5v13A1.5 1.5 0 0 0 1.5 16h13a1.5 1.5 0 0 0 1.5-1.5v-13A1.5 1.5 0 0 0 14.5 0h-13z"/>
                     </svg>
-                    Assets
+                    <span data-translate="nav_assets">Assets</span>
                 </div>
                 <div class="nav-item" onclick="switchTab('jobs')">
                     <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16" style="margin-right: 8px;">
                         <path d="M7 2.5a.5.5 0 0 1 .5-.5h4a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-4a.5.5 0 0 1-.5-.5v-1z"/>
                     </svg>
-                    Jobs
+                    <span data-translate="nav_jobs">Jobs</span>
                 </div>
             </div>
         </div>
@@ -641,8 +92,8 @@ body {
     <section class="hero-section">
         <div class="hero-content">
             <h1 class="hero-title">Kassia</h1>
-            <div class="hero-subtitle">Windows Image Preparation System</div>
-            <div class="hero-description">
+            <div class="hero-subtitle" data-translate="hero_subtitle">Windows Image Preparation System</div>
+            <div class="hero-description" data-translate="hero_description">
                 Advanced automation platform for Windows image customization and deployment.
                 Built with enterprise-grade reliability and Siemens engineering excellence.
             </div>
@@ -650,7 +101,7 @@ body {
                 <svg width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
                     <path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/>
                 </svg>
-                Start Building
+                <span data-translate="hero_cta">Start Building</span>
             </div>
         </div>
     </section>
@@ -663,25 +114,25 @@ body {
                 <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                     <path d="M6 1v3H1V1h5zM1 0a1 1 0 0 0-1 1v3a1 1 0 0 0 1 1h5a1 1 0 0 0 1-1V1a1 1 0 0 0-1-1H1z"/>
                 </svg>
-                Dashboard
+                <span data-translate="nav_dashboard">Dashboard</span>
             </button>
             <button class="tab-btn" data-tab="build" onclick="switchTab('build')">
                 <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                     <path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/>
                 </svg>
-                New Build
+                <span data-translate="nav_build">New Build</span>
             </button>
             <button class="tab-btn" data-tab="assets" onclick="switchTab('assets')">
                 <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                    <path d="M1.5 0A1.5 1.5 0 0 0 0 1.5v13A1.5 1.5 0 0 0 1.5 16h13a1.5 1.5 0 0 0 1.5-1.5v-13A1.5 1.5 0 0 0 14.5 0h-13z"/>
+                    <path d="M1.5 0A1.5 1.5 0 0 0 0 1.5v13A1.5 1.5 0 0 0 1.5 16h13a1.5 1.5 0 0 0 1-1.5v-13A1.5 1.5 0 0 0 14.5 0h-13z"/>
                 </svg>
-                Assets
+                <span data-translate="nav_assets">Assets</span>
             </button>
             <button class="tab-btn" data-tab="jobs" onclick="switchTab('jobs')">
                 <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                     <path d="M7 2.5a.5.5 0 0 1 .5-.5h4a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-4a.5.5 0 0 1-.5-.5v-1z"/>
                 </svg>
-                Jobs
+                <span data-translate="nav_jobs">Jobs</span>
             </button>
         </div>
 
@@ -693,47 +144,47 @@ body {
                         <svg width="24" height="24" fill="currentColor" viewBox="0 0 16 16" style="margin-right: 12px;">
                             <path d="M6 1v3H1V1h5zM1 0a1 1 0 0 0-1 1v3a1 1 0 0 0 1 1h5a1 1 0 0 0 1-1V1a1 1 0 0 0-1-1H1z"/>
                         </svg>
-                        System Overview
+                        <span data-translate="dashboard_system_overview">System Overview</span>
                     </h2>
                 </div>
                 <div class="card-content">
                     <div class="status-grid">
                         <div class="status-card">
                             <span class="status-number" id="totalJobs">0</span>
-                            <div class="status-label">Total Jobs</div>
+                            <div class="status-label" data-translate="stats_total_jobs">Total Jobs</div>
                         </div>
                         <div class="status-card">
                             <span class="status-number" id="runningJobs">0</span>
-                            <div class="status-label">Running</div>
+                            <div class="status-label" data-translate="stats_running">Running</div>
                         </div>
                         <div class="status-card">
                             <span class="status-number" id="completedJobs">0</span>
-                            <div class="status-label">Completed</div>
+                            <div class="status-label" data-translate="stats_completed">Completed</div>
                         </div>
                         <div class="status-card">
                             <span class="status-number" id="failedJobs">0</span>
-                            <div class="status-label">Failed</div>
+                            <div class="status-label" data-translate="stats_failed">Failed</div>
                         </div>
                     </div>
 
                     <!-- Active Job Display -->
                     <div id="activeJobCard" class="content-card" style="display: none;">
                         <div class="card-header">
-                            <h3 class="card-title">Active Job</h3>
+                            <h3 class="card-title" data-translate="active_job_title">Active Job</h3>
                         </div>
                         <div class="card-content">
                             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
                                 <div>
-                                    <strong>Job:</strong> <span id="activeJobTitle">-</span><br>
-                                    <strong>Status:</strong> <span id="activeJobStatus" class="status-badge">-</span>
+                                    <strong data-translate="job_label">Job:</strong> <span id="activeJobTitle">-</span><br>
+                                    <strong data-translate="status_label">Status:</strong> <span id="activeJobStatus" class="status-badge">-</span>
                                 </div>
                                 <div>
-                                    <strong>Progress:</strong> <span id="activeJobProgress">0%</span><br>
-                                    <strong>Step:</strong> <span id="activeJobStep">-</span>
+                                    <strong data-translate="progress_label">Progress:</strong> <span id="activeJobProgress">0%</span><br>
+                                    <strong data-translate="step_label">Step:</strong> <span id="activeJobStep">-</span>
                                 </div>
                             </div>
                             <div style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px; padding: 10px; height: 100px; overflow-y: auto; font-family: monospace; font-size: 14px;" id="activeJobLogs">
-                                Waiting for job updates...
+                                <span data-translate="waiting_job_updates">Waiting for job updates...</span>
                             </div>
                             <div style="width: 100%; height: 8px; background: #e9ecef; border-radius: 4px; overflow: hidden; margin-top: 15px;">
                                 <div id="activeJobProgressBar" style="height: 100%; background: var(--siemens-bright-petrol); transition: width 0.3s ease; width: 0%;"></div>
@@ -743,11 +194,11 @@ body {
 
                     <div class="content-card">
                         <div class="card-header">
-                            <h3 class="card-title">Recent Jobs</h3>
+                            <h3 class="card-title" data-translate="recent_jobs_title">Recent Jobs</h3>
                         </div>
                         <div class="card-content">
                             <div id="recentJobsList">
-                                <p style="text-align: center; color: var(--siemens-text-secondary); padding: 40px;">
+                                <p style="text-align: center; color: var(--siemens-text-secondary); padding: 40px;" data-translate="no_jobs_yet">
                                     No jobs yet. Start a new build to see activity here.
                                 </p>
                             </div>
@@ -765,22 +216,22 @@ body {
                         <svg width="24" height="24" fill="currentColor" viewBox="0 0 16 16" style="margin-right: 12px;">
                             <path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/>
                         </svg>
-                        Create New Build
+                        <span data-translate="build_create_new">Create New Build</span>
                     </h2>
                 </div>
                 <div class="card-content">
                     <form id="buildForm">
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
                             <div class="form-group">
-                                <label class="form-label" for="deviceSelect">Device Configuration</label>
+                                <label class="form-label" for="deviceSelect" data-translate="build_device_config">Device Configuration</label>
                                 <select id="deviceSelect" class="form-control" required>
-                                    <option value="">Select device...</option>
+                                    <option value="" data-translate="select_device">Select device...</option>
                                 </select>
                             </div>
                             <div class="form-group">
-                                <label class="form-label" for="osSelect">Operating System</label>
+                                <label class="form-label" for="osSelect" data-translate="build_operating_system">Operating System</label>
                                 <select id="osSelect" class="form-control" disabled required>
-                                    <option value="">Select OS...</option>
+                                    <option value="" data-translate="select_os">Select OS...</option>
                                 </select>
                             </div>
                         </div>
@@ -789,26 +240,26 @@ body {
                             <div>
                                 <label style="display: flex; align-items: center; gap: 8px;">
                                     <input type="checkbox" id="skipDrivers">
-                                    Skip driver integration
+                                    <span data-translate="skip_drivers">Skip driver integration</span>
                                 </label>
                             </div>
                             <div>
                                 <label style="display: flex; align-items: center; gap: 8px;">
                                     <input type="checkbox" id="skipUpdates">
-                                    Skip update integration
+                                    <span data-translate="skip_updates">Skip update integration</span>
                                 </label>
                             </div>
                         </div>
 
                         <div id="buildPreview" style="display: none; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
-                            <h4 style="margin-bottom: 15px;">Build Preview</h4>
+                            <h4 style="margin-bottom: 15px;" data-translate="build_preview">Build Preview</h4>
                             <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; font-size: 14px;">
-                                <div><strong>Device:</strong> <span id="previewDevice">-</span></div>
-                                <div><strong>OS:</strong> <span id="previewOS">-</span></div>
-                                <div><strong>WIM Path:</strong> <span id="previewWimPath">-</span></div>
-                                <div><strong>SBI:</strong> <span id="previewSBI">-</span></div>
-                                <div><strong>Drivers:</strong> <span id="previewDrivers">-</span></div>
-                                <div><strong>Updates:</strong> <span id="previewUpdates">-</span></div>
+                                <div><strong data-translate="device_label">Device:</strong> <span id="previewDevice">-</span></div>
+                                <div><strong data-translate="os_label">OS:</strong> <span id="previewOS">-</span></div>
+                                <div><strong data-translate="wim_path_label">WIM Path:</strong> <span id="previewWimPath">-</span></div>
+                                <div><strong data-translate="sbi_label">SBI:</strong> <span id="previewSBI">-</span></div>
+                                <div><strong data-translate="drivers_label">Drivers:</strong> <span id="previewDrivers">-</span></div>
+                                <div><strong data-translate="updates_label">Updates:</strong> <span id="previewUpdates">-</span></div>
                             </div>
                         </div>
 
@@ -816,7 +267,7 @@ body {
                             <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                                 <path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/>
                             </svg>
-                            Start Build
+                            <span data-translate="start_build">Start Build</span>
                         </button>
                     </form>
                 </div>
@@ -831,21 +282,21 @@ body {
                         <svg width="24" height="24" fill="currentColor" viewBox="0 0 16 16" style="margin-right: 12px;">
                             <path d="M1.5 0A1.5 1.5 0 0 0 0 1.5v13A1.5 1.5 0 0 0 1.5 16h13a1.5 1.5 0 0 0 1.5-1.5v-13A1.5 1.5 0 0 0 14.5 0h-13z"/>
                         </svg>
-                        Asset Management
+                        <span data-translate="asset_management">Asset Management</span>
                     </h2>
                 </div>
                 <div class="card-content">
                     <div style="display: grid; grid-template-columns: 1fr 1fr auto; gap: 16px; margin-bottom: 32px;">
                         <div class="form-group">
-                            <label class="form-label" for="assetDeviceFilter">Device Filter</label>
+                            <label class="form-label" for="assetDeviceFilter" data-translate="device_filter">Device Filter</label>
                             <select id="assetDeviceFilter" class="form-control">
-                                <option value="">All Devices</option>
+                                <option value="" data-translate="all_devices">All Devices</option>
                             </select>
                         </div>
                         <div class="form-group">
-                            <label class="form-label" for="assetOSFilter">OS Filter</label>
+                            <label class="form-label" for="assetOSFilter" data-translate="os_filter">OS Filter</label>
                             <select id="assetOSFilter" class="form-control">
-                                <option value="">All OS</option>
+                                <option value="" data-translate="all_os">All OS</option>
                             </select>
                         </div>
                         <div class="form-group">
@@ -854,13 +305,13 @@ body {
                                 <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                                     <path fill-rule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"/>
                                 </svg>
-                                Refresh
+                                <span data-translate="refresh">Refresh</span>
                             </button>
                         </div>
                     </div>
 
                     <div id="assetsContent">
-                        <p style="text-align: center; color: var(--siemens-text-secondary); padding: 40px;">
+                        <p style="text-align: center; color: var(--siemens-text-secondary); padding: 40px;" data-translate="select_device_os_assets">
                             Select device and OS to view available assets
                         </p>
                     </div>
@@ -876,18 +327,18 @@ body {
                         <svg width="24" height="24" fill="currentColor" viewBox="0 0 16 16" style="margin-right: 12px;">
                             <path d="M7 2.5a.5.5 0 0 1 .5-.5h4a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-4a.5.5 0 0 1-.5-.5v-1z"/>
                         </svg>
-                        Build Jobs
+                        <span data-translate="build_jobs">Build Jobs</span>
                         <button class="btn btn-secondary" onclick="refreshJobs()" style="margin-left: auto; padding: 8px 16px; font-size: 14px;">
                             <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                                 <path fill-rule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"/>
                             </svg>
-                            Refresh
+                            <span data-translate="refresh">Refresh</span>
                         </button>
                     </h2>
                 </div>
                 <div class="card-content">
                     <div id="jobsList">
-                        <p style="text-align: center; color: var(--siemens-text-secondary); padding: 40px;">
+                        <p style="text-align: center; color: var(--siemens-text-secondary); padding: 40px;" data-translate="no_build_jobs">
                             No build jobs found. Start your first build to see it here.
                         </p>
                     </div>
@@ -896,952 +347,27 @@ body {
         </div>
     </div>
 
+    <!-- JavaScript Files -->
+    <script src="/static/js/translations.js"></script>
+    <script src="/static/js/websocket.js"></script>
+    <script src="/static/js/api.js"></script>
+    <script src="/static/js/ui.js"></script>
+    <script src="/static/js/kassia-app.js"></script>
+    
     <script>
-        // Kassia WebUI - Fixed JavaScript Application
-        class KassiaApp {
-            constructor() {
-                this.ws = null;
-                this.isConnected = false;
-                this.currentActiveJob = null;
-                this.devices = [];
-                this.assets = {};
-                this.jobs = [];
-                
-                // Initialize app when DOM is ready
-                this.init();
-            }
-
-            async init() {
-                console.log('🚀 Initializing Kassia WebUI...');
-
-                // Setup WebSocket connection
-                this.setupWebSocket();
-
-                // Load initial data
-                await this.loadDevices();
-                await this.loadJobs();
-
-                // Setup event listeners
-                this.setupEventListeners();
-
-                // Setup periodic refresh
-                this.setupPeriodicRefresh();
-
-                console.log('✅ Kassia WebUI initialized successfully');
-            }
-
-            setupWebSocket() {
-                const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-                const wsUrl = `${protocol}//${window.location.host}/ws`;
-
-                try {
-                    this.ws = new WebSocket(wsUrl);
-
-                    this.ws.onopen = () => {
-                        console.log('🔌 WebSocket connected');
-                        this.isConnected = true;
-                        this.updateConnectionStatus(true);
-                    };
-
-                    this.ws.onmessage = (event) => {
-                        try {
-                            const data = JSON.parse(event.data);
-                            this.handleWebSocketMessage(data);
-                        } catch (error) {
-                            console.error('❌ Failed to parse WebSocket message:', error);
-                        }
-                    };
-
-                    this.ws.onclose = () => {
-                        console.log('🔌 WebSocket disconnected');
-                        this.isConnected = false;
-                        this.updateConnectionStatus(false);
-
-                        // Attempt reconnection after 3 seconds
-                        setTimeout(() => this.setupWebSocket(), 3000);
-                    };
-
-                    this.ws.onerror = (error) => {
-                        console.error('❌ WebSocket error:', error);
-                        this.isConnected = false;
-                        this.updateConnectionStatus(false);
-                    };
-
-                } catch (error) {
-                    console.error('❌ Failed to setup WebSocket:', error);
-                    this.updateConnectionStatus(false);
-                }
-            }
-
-            handleWebSocketMessage(data) {
-                switch (data.type) {
-                    case 'job_update':
-                        this.handleJobUpdate(data.job_id, data.data);
-                        break;
-                    case 'heartbeat':
-                        // Keep-alive heartbeat, no action needed
-                        break;
-                    default:
-                        console.log('📨 Unknown WebSocket message type:', data.type);
-                }
-            }
-
-            handleJobUpdate(jobId, jobData) {
-                console.log(`📊 Job update for ${jobId}:`, jobData.status);
-
-                // Update jobs list
-                const jobIndex = this.jobs.findIndex(job => job.id === jobId);
-                if (jobIndex >= 0) {
-                    this.jobs[jobIndex] = jobData;
+        // Initialize the application when all scripts are loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 Initializing Kassia WebUI Application...');
+            
+            // Wait a bit for all managers to be ready
+            setTimeout(() => {
+                if (window.KassiaApp) {
+                    window.kassiaApp = new window.KassiaApp();
                 } else {
-                    this.jobs.push(jobData);
+                    console.error('❌ KassiaApp class not found');
                 }
-
-                // Update active job display if this is the current active job
-                if (jobData.status === 'running') {
-                    this.currentActiveJob = jobData;
-                    this.updateActiveJobDisplay(jobData);
-                } else if (this.currentActiveJob && this.currentActiveJob.id === jobId) {
-                    this.currentActiveJob = null;
-                    this.hideActiveJobDisplay();
-                }
-
-                // Refresh displays
-                this.updateDashboardStats();
-                this.updateJobsList();
-
-                // Show completion notification
-                if (jobData.status === 'completed') {
-                    this.showToast('Build completed successfully!', 'success');
-                } else if (jobData.status === 'failed') {
-                    this.showToast(`Build failed: ${jobData.error || 'Unknown error'}`, 'error');
-                }
-            }
-
-            updateConnectionStatus(connected) {
-                const statusEl = document.getElementById('connectionStatus');
-                if (!statusEl) return;
-
-                if (connected) {
-                    statusEl.className = 'connection-status status-online';
-                    statusEl.innerHTML = '<span>🟢 Connected</span>';
-                } else {
-                    statusEl.className = 'connection-status status-offline';
-                    statusEl.innerHTML = '<span>🔴 Disconnected</span>';
-                }
-            }
-
-            async loadDevices() {
-                try {
-                    console.log('📱 Loading devices...');
-                    const response = await fetch('/api/devices');
-
-                    if (!response.ok) {
-                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                    }
-
-                    this.devices = await response.json();
-                    console.log(`✅ Loaded ${this.devices.length} devices`);
-
-                    this.populateDeviceSelect();
-                    this.populateAssetFilters();
-
-                } catch (error) {
-                    console.error('❌ Failed to load devices:', error);
-                    this.showToast('Failed to load device configurations', 'error');
-                }
-            }
-
-            async loadJobs() {
-                try {
-                    console.log('📋 Loading jobs...');
-                    const response = await fetch('/api/jobs');
-
-                    if (!response.ok) {
-                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                    }
-
-                    this.jobs = await response.json();
-                    console.log(`✅ Loaded ${this.jobs.length} jobs`);
-
-                    this.updateDashboardStats();
-                    this.updateJobsList();
-
-                    // Check for active job
-                    const activeJob = this.jobs.find(job => job.status === 'running');
-                    if (activeJob) {
-                        this.currentActiveJob = activeJob;
-                        this.updateActiveJobDisplay(activeJob);
-                    }
-
-                } catch (error) {
-                    console.error('❌ Failed to load jobs:', error);
-                    this.showToast('Failed to load build jobs', 'error');
-                }
-            }
-
-            populateDeviceSelect() {
-                const deviceSelect = document.getElementById('deviceSelect');
-                const assetDeviceFilter = document.getElementById('assetDeviceFilter');
-
-                if (!deviceSelect) return;
-
-                // Clear existing options
-                deviceSelect.innerHTML = '<option value="">Select device...</option>';  
-                if (assetDeviceFilter) {
-                    assetDeviceFilter.innerHTML = '<option value="">All Devices</option>';
-                }
-
-                // Add device options
-                this.devices.forEach(device => {
-                    const option = document.createElement('option');
-                    option.value = device.device_id;
-                    option.textContent = `${device.device_id} (OS: ${device.supported_os.join(', ')})`;
-                    deviceSelect.appendChild(option);
-
-                    if (assetDeviceFilter) {
-                        const filterOption = option.cloneNode(true);
-                        assetDeviceFilter.appendChild(filterOption);
-                    }
-                });
-            }
-
-            populateAssetFilters() {
-                const osFilter = document.getElementById('assetOSFilter');
-                if (!osFilter) return;
-
-                // Clear existing options
-                osFilter.innerHTML = '<option value="">All OS</option>';
-
-                // Get unique OS IDs from all devices
-                const osIds = new Set();
-                this.devices.forEach(device => {
-                    device.supported_os.forEach(osId => osIds.add(osId));
-                });
-
-                // Add OS options
-                Array.from(osIds).sort((a, b) => a - b).forEach(osId => {
-                    const option = document.createElement('option');
-                    option.value = osId;
-                    option.textContent = `OS ${osId}`;
-                    osFilter.appendChild(option);
-                });
-            }
-
-            setupEventListeners() {
-                // Device selection change
-                const deviceSelect = document.getElementById('deviceSelect');
-                if (deviceSelect) {
-                    deviceSelect.addEventListener('change', (e) => this.handleDeviceChange(e.target.value));
-                }
-
-                // OS selection change
-                const osSelect = document.getElementById('osSelect');
-                if (osSelect) {
-                    osSelect.addEventListener('change', (e) => this.handleOSChange(e.target.value));
-                }
-
-                // Build form submission
-                const buildForm = document.getElementById('buildForm');
-                if (buildForm) {
-                    buildForm.addEventListener('submit', (e) => this.handleBuildSubmit(e));
-                }
-
-                // Asset filters
-                const assetDeviceFilter = document.getElementById('assetDeviceFilter');
-                const assetOSFilter = document.getElementById('assetOSFilter');
-
-                if (assetDeviceFilter) {
-                    assetDeviceFilter.addEventListener('change', () => this.handleAssetFilterChange());
-                }
-
-                if (assetOSFilter) {
-                    assetOSFilter.addEventListener('change', () => this.handleAssetFilterChange());
-                }
-            }
-
-            handleDeviceChange(deviceId) {
-                const osSelect = document.getElementById('osSelect');
-                if (!osSelect) return;
-
-                // Clear OS options
-                osSelect.innerHTML = '<option value="">Select OS...</option>';
-                osSelect.disabled = !deviceId;
-
-                if (!deviceId) return;
-
-                // Find selected device
-                const device = this.devices.find(d => d.device_id === deviceId);
-                if (!device) return;
-
-                // Populate OS options
-                device.supported_os.forEach(osId => {
-                    const option = document.createElement('option');
-                    option.value = osId;
-                    option.textContent = `OS ${osId}`;
-                    osSelect.appendChild(option);
-                });
-
-                osSelect.disabled = false;
-            }
-
-            async handleOSChange(osId) {
-                const deviceSelect = document.getElementById('deviceSelect');
-                if (!deviceSelect || !deviceSelect.value || !osId) return;
-
-                // Load assets for preview
-                await this.loadAssets(deviceSelect.value, parseInt(osId));
-                this.updateBuildPreview(deviceSelect.value, osId);
-            }
-
-            async loadAssets(deviceId, osId) {
-                try {
-                    console.log(`📂 Loading assets for ${deviceId} OS ${osId}...`);
-                    const response = await fetch(`/api/assets/${deviceId}/${osId}`);
-
-                    if (!response.ok) {
-                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                    }
-
-                    const assets = await response.json();
-                    this.assets[`${deviceId}_${osId}`] = assets;
-
-                    console.log(`✅ Loaded assets:`, {
-                        sbi: assets.sbi ? '✅' : '❌',
-                        drivers: assets.drivers.length,
-                        updates: assets.updates.length,
-                        yunona: assets.yunona_scripts.length
-                    });
-
-                    return assets;
-
-                } catch (error) {
-                    console.error('❌ Failed to load assets:', error);
-                    this.showToast('Failed to load assets', 'error');
-                    return null;
-                }
-            }
-
-            updateBuildPreview(deviceId, osId) {
-                const assets = this.assets[`${deviceId}_${osId}`];
-                if (!assets) return;
-
-                // Update preview elements
-                const previewDevice = document.getElementById('previewDevice');
-                const previewOS = document.getElementById('previewOS');
-                const previewWimPath = document.getElementById('previewWimPath');
-                const previewSBI = document.getElementById('previewSBI');
-                const previewDrivers = document.getElementById('previewDrivers');
-                const previewUpdates = document.getElementById('previewUpdates');
-                const buildPreview = document.getElementById('buildPreview');
-
-                if (previewDevice) previewDevice.textContent = deviceId;
-                if (previewOS) previewOS.textContent = `OS ${osId}`;
-                if (previewWimPath) previewWimPath.textContent = assets.wim_path || 'Not configured';
-                if (previewSBI) previewSBI.textContent = assets.sbi ? '✅ Found' : '❌ Missing';
-                if (previewDrivers) previewDrivers.textContent = `${assets.drivers.length} packages`;
-                if (previewUpdates) previewUpdates.textContent = `${assets.updates.length} packages`;
-
-                if (buildPreview) {
-                    buildPreview.style.display = 'block';
-                }
-            }
-
-            async handleBuildSubmit(event) {
-                event.preventDefault();
-
-                const deviceSelect = document.getElementById('deviceSelect');
-                const osSelect = document.getElementById('osSelect');
-                const skipDrivers = document.getElementById('skipDrivers');
-                const skipUpdates = document.getElementById('skipUpdates');
-                const startBuildBtn = document.getElementById('startBuildBtn');
-
-                if (!deviceSelect?.value || !osSelect?.value) {
-                    this.showToast('Please select device and OS', 'error');
-                    return;
-                }
-
-                // Disable form
-                if (startBuildBtn) {
-                    startBuildBtn.disabled = true;
-                    startBuildBtn.innerHTML = `
-                        <div class="loading-spinner" style="margin-right: 8px;"></div>
-                        Starting Build...
-                    `;
-                }
-
-                try {
-                    const buildRequest = {
-                        device: deviceSelect.value,
-                        os_id: parseInt(osSelect.value),
-                        skip_drivers: skipDrivers?.checked || false,
-                        skip_updates: skipUpdates?.checked || false
-                    };
-
-                    console.log('🚀 Starting build:', buildRequest);
-
-                    const response = await fetch('/api/build', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify(buildRequest)
-                    });
-
-                    if (!response.ok) {
-                        const error = await response.text();
-                        throw new Error(`HTTP ${response.status}: ${error}`);
-                    }
-
-                    const result = await response.json();
-                    console.log('✅ Build started:', result.job_id);
-
-                    this.showToast('Build started successfully!', 'success');
-
-                    // Switch to dashboard to show progress
-                    this.switchTab('dashboard');
-
-                    // Refresh jobs to show new job
-                    await this.loadJobs();
-
-                } catch (error) {
-                    console.error('❌ Failed to start build:', error);
-                    this.showToast(`Failed to start build: ${error.message}`, 'error');
-                } finally {
-                    // Re-enable form
-                    if (startBuildBtn) {
-                        startBuildBtn.disabled = false;
-                        startBuildBtn.innerHTML = `
-                            <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                                <path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/>
-                            </svg>
-                            Start Build
-                        `;
-                    }
-                }
-            }
-
-            async handleAssetFilterChange() {
-                const deviceFilter = document.getElementById('assetDeviceFilter');
-                const osFilter = document.getElementById('assetOSFilter');
-
-                if (!deviceFilter?.value || !osFilter?.value) {
-                    this.displayAssetsMessage('Select device and OS to view available assets');
-                    return;
-                }
-
-                const assets = await this.loadAssets(deviceFilter.value, parseInt(osFilter.value));
-                if (assets) {
-                    this.displayAssets(assets);
-                }
-            }
-
-            displayAssets(assets) {
-                const assetsContent = document.getElementById('assetsContent');
-                if (!assetsContent) return;
-
-                let html = '';
-
-                // SBI Section
-                html += this.createAssetSection('System Base Image (SBI)', assets.sbi ? [assets.sbi] : [], 'sbi');
-
-                // Drivers Section
-                html += this.createAssetSection('Drivers', assets.drivers, 'drivers');
-
-                // Updates Section
-                html += this.createAssetSection('Updates', assets.updates, 'updates');
-
-                // Yunona Scripts Section
-                html += this.createAssetSection('Yunona Scripts', assets.yunona_scripts, 'scripts');
-
-                assetsContent.innerHTML = html;
-            }
-
-            createAssetSection(title, items, type) {
-                const count = items.length;
-
-                let html = `
-                    <div style="margin-bottom: 30px;">
-                        <h3 style="margin-bottom: 15px; color: var(--siemens-deep-blue);">
-                            ${title} (${count})
-                        </h3>
-                `;
-
-                if (count === 0) {
-                    html += `<p style="color: var(--siemens-text-secondary); font-style: italic;">No ${title.toLowerCase()} found</p>`;
-                } else {
-                    html += '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px;">';
-                    items.forEach(item => {
-                        html += this.createAssetItem(item);
-                    });
-                    html += '</div>';
-                }
-
-                html += '</div>';
-                return html;
-            }
-
-            createAssetItem(asset) {
-                const validClass = asset.valid ? 'valid' : 'invalid';
-                const statusColor = asset.valid ? '#28a745' : '#dc3545';
-                const statusText = asset.valid ? 'Valid' : 'Invalid';
-                const sizeText = asset.size ? this.formatBytes(asset.size) : 'Unknown size';
-
-                return `
-                    <div style="background: white; border: 1px solid #dee2e6; border-left: 4px solid ${statusColor}; border-radius: 8px; padding: 15px;">
-                        <h4 style="margin-bottom: 8px; color: var(--siemens-deep-blue);">${asset.name}</h4>
-                        <p style="font-size: 12px; background: #f8f9fa; padding: 4px 8px; border-radius: 4px; margin-bottom: 8px; display: inline-block;">${asset.type}</p>
-                        <p style="font-family: monospace; font-size: 12px; color: #666; margin-bottom: 10px; word-break: break-all;">${asset.path}</p>
-                        <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <span style="font-size: 14px; color: #666;">${sizeText}</span>
-                            <span style="padding: 4px 8px; border-radius: 12px; font-size: 12px; font-weight: bold; color: white; background: ${statusColor};">${statusText}</span>
-                        </div>
-                    </div>
-                `;
-            }
-
-            displayAssetsMessage(message) {
-                const assetsContent = document.getElementById('assetsContent');
-                if (!assetsContent) return;
-
-                assetsContent.innerHTML = `
-                    <p style="text-align: center; color: var(--siemens-text-secondary); padding: 40px;">
-                        ${message}
-                    </p>
-                `;
-            }
-
-            updateActiveJobDisplay(jobData) {
-                const activeJobCard = document.getElementById('activeJobCard');
-                const activeJobTitle = document.getElementById('activeJobTitle');
-                const activeJobStatus = document.getElementById('activeJobStatus');
-                const activeJobStep = document.getElementById('activeJobStep');
-                const activeJobProgress = document.getElementById('activeJobProgress');
-                const activeJobProgressBar = document.getElementById('activeJobProgressBar');
-                const activeJobLogs = document.getElementById('activeJobLogs');
-
-                if (!activeJobCard) return;
-
-                // Show card
-                activeJobCard.style.display = 'block';
-
-                // Update content
-                if (activeJobTitle) {
-                    activeJobTitle.textContent = `${jobData.device} - OS ${jobData.os_id}`;
-                }
-
-                if (activeJobStatus) {
-                    activeJobStatus.textContent = jobData.status.charAt(0).toUpperCase() + jobData.status.slice(1);
-                    activeJobStatus.className = `status-badge ${this.getStatusClass(jobData.status)}`;
-                }
-
-                if (activeJobStep) {
-                    activeJobStep.textContent = `Step ${jobData.step_number}/${jobData.total_steps}: ${jobData.current_step}`;
-                }
-
-                if (activeJobProgress) {
-                    activeJobProgress.textContent = `${jobData.progress}%`;
-                }
-
-                if (activeJobProgressBar) {
-                    activeJobProgressBar.style.width = `${jobData.progress}%`;
-                }
-
-                // Update logs (show last few entries)
-                if (activeJobLogs && jobData.logs) {
-                    const recentLogs = jobData.logs.slice(-5); // Show last 5 logs
-                    const logsHtml = recentLogs.map(log => `<div>${log.message || log}</div>`).join('');
-                    activeJobLogs.innerHTML = logsHtml || '<div>Waiting for job updates...</div>';
-                    activeJobLogs.scrollTop = activeJobLogs.scrollHeight;
-                }
-            }
-
-            hideActiveJobDisplay() {
-                const activeJobCard = document.getElementById('activeJobCard');
-                if (activeJobCard) {
-                    activeJobCard.style.display = 'none';
-                }
-            }
-
-            updateDashboardStats() {
-                const totalJobs = document.getElementById('totalJobs');
-                const runningJobs = document.getElementById('runningJobs');
-                const completedJobs = document.getElementById('completedJobs');
-                const failedJobs = document.getElementById('failedJobs');
-
-                const stats = {
-                    total: this.jobs.length,
-                    running: this.jobs.filter(job => job.status === 'running').length,
-                    completed: this.jobs.filter(job => job.status === 'completed').length,
-                    failed: this.jobs.filter(job => job.status === 'failed').length
-                };
-
-                if (totalJobs) totalJobs.textContent = stats.total;
-                if (runningJobs) runningJobs.textContent = stats.running;
-                if (completedJobs) completedJobs.textContent = stats.completed;
-                if (failedJobs) failedJobs.textContent = stats.failed;
-
-                // Update recent jobs list
-                this.updateRecentJobsList();
-            }
-
-            updateRecentJobsList() {
-                const recentJobsList = document.getElementById('recentJobsList');
-                if (!recentJobsList) return;
-
-                if (this.jobs.length === 0) {
-                    recentJobsList.innerHTML = `
-                        <p style="text-align: center; color: var(--siemens-text-secondary); padding: 40px;">
-                            No jobs yet. Start a new build to see activity here.
-                        </p>
-                    `;
-                    return;
-                }
-
-                // Show last 5 jobs
-                const recentJobs = this.jobs
-                    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-                    .slice(0, 5);
-
-                const html = recentJobs.map(job => this.createJobItem(job, true)).join('');
-                recentJobsList.innerHTML = html;
-            }
-
-            updateJobsList() {
-                const jobsList = document.getElementById('jobsList');
-                if (!jobsList) return;
-
-                if (this.jobs.length === 0) {
-                    jobsList.innerHTML = `
-                        <p style="text-align: center; color: var(--siemens-text-secondary); padding: 40px;">
-                            No build jobs found. Start your first build to see it here.
-                        </p>
-                    `;
-                    return;
-                }
-
-                // Sort jobs by creation date (newest first)
-                const sortedJobs = this.jobs.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-
-                const html = sortedJobs.map(job => this.createJobItem(job, false)).join('');
-                jobsList.innerHTML = html;
-            }
-
-            createJobItem(job, isCompact = false) {
-                const statusClass = this.getStatusClass(job.status);
-                const duration = this.calculateDuration(job);
-                const createdAt = new Date(job.created_at).toLocaleString();
-
-                let progressHtml = '';
-                if (job.status === 'running') {
-                    progressHtml = `
-                        <div style="margin-bottom: 15px;">
-                            <div style="display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 14px;">
-                                <span>Step ${job.step_number}/${job.total_steps}: ${job.current_step}</span>
-                                <span>${job.progress}%</span>
-                            </div>
-                            <div style="width: 100%; height: 8px; background: #e9ecef; border-radius: 4px; overflow: hidden;">
-                                <div style="height: 100%; background: var(--siemens-bright-petrol); transition: width 0.3s ease; width: ${job.progress}%;"></div>
-                            </div>
-                        </div>
-                    `;
-                }
-
-                let actionsHtml = '';
-                if (!isCompact) {
-                    if (job.status === 'running') {
-                        actionsHtml = `
-                            <div style="display: flex; gap: 10px; justify-content: flex-end;">
-                                <button class="btn btn-secondary" onclick="kassiaApp.showJobLogs('${job.id}')" style="padding: 6px 12px; font-size: 14px;">
-                                    View Logs
-                                </button>
-                                <button class="btn" onclick="kassiaApp.cancelJob('${job.id}')" style="padding: 6px 12px; font-size: 14px; background: #ffc107; color: #212529;">
-                                    Cancel
-                                </button>
-                            </div>
-                        `;
-                    } else {
-                        actionsHtml = `
-                            <div style="display: flex; gap: 10px; justify-content: flex-end;">
-                                <button class="btn btn-secondary" onclick="kassiaApp.showJobLogs('${job.id}')" style="padding: 6px 12px; font-size: 14px;">
-                                    View Logs
-                                </button>
-                                ${job.status === 'completed' ? `
-                                <button class="btn btn-primary" onclick="kassiaApp.showJobDetails('${job.id}')" style="padding: 6px 12px; font-size: 14px;">
-                                    Details
-                                </button>
-                                ` : ''}
-                            </div>
-                        `;
-                    }
-                }
-
-                return `
-                    <div style="background: white; border: 1px solid #dee2e6; border-radius: 8px; padding: 20px; margin-bottom: 15px;">
-                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px;">
-                            <div>
-                                <h3 style="margin: 0; font-size: 18px; color: var(--siemens-deep-blue);">${job.device} - OS ${job.os_id}</h3>
-                                <div style="font-size: 12px; color: #6c757d; font-family: monospace;">Job ID: ${job.id}</div>
-                            </div>
-                            <span style="padding: 4px 8px; border-radius: 12px; font-size: 12px; font-weight: 600; text-transform: uppercase; ${this.getStatusStyle(job.status)}">${job.status.charAt(0).toUpperCase() + job.status.slice(1)}</span>
-                        </div>
-                        
-                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 15px;">
-                            <div>
-                                <div style="font-size: 12px; color: #6c757d; font-weight: 500;">CREATED</div>
-                                <div style="font-size: 14px; color: #212529;">${createdAt}</div>
-                            </div>
-                            <div>
-                                <div style="font-size: 12px; color: #6c757d; font-weight: 500;">DURATION</div>
-                                <div style="font-size: 14px; color: #212529;">${duration}</div>
-                            </div>
-                            ${job.results?.final_wim_size_mb ? `
-                            <div>
-                                <div style="font-size: 12px; color: #6c757d; font-weight: 500;">FINAL SIZE</div>
-                                <div style="font-size: 14px; color: #212529;">${job.results.final_wim_size_mb.toFixed(1)} MB</div>
-                            </div>
-                            ` : ''}
-                            ${job.error ? `
-                            <div>
-                                <div style="font-size: 12px; color: #6c757d; font-weight: 500;">ERROR</div>
-                                <div style="font-size: 14px; color: #e74c3c;">${job.error}</div>
-                            </div>
-                            ` : ''}
-                        </div>
-                        
-                        ${progressHtml}
-                        ${actionsHtml}
-                    </div>
-                `;
-            }
-
-            getStatusClass(status) {
-                const statusMap = {
-                    'created': 'status-info',
-                    'running': 'status-info',
-                    'completed': 'status-success',
-                    'failed': 'status-error',
-                    'cancelled': 'status-warning'
-                };
-                return statusMap[status] || 'status-info';
-            }
-
-            getStatusStyle(status) {
-                const styleMap = {
-                    'created': 'background: #cce7ff; color: #004085;',
-                    'running': 'background: #cce7ff; color: #004085;',
-                    'completed': 'background: #d4edda; color: #155724;',
-                    'failed': 'background: #f8d7da; color: #721c24;',
-                    'cancelled': 'background: #fff3cd; color: #856404;'
-                };
-                return styleMap[status] || 'background: #cce7ff; color: #004085;';
-            }
-
-            calculateDuration(job) {
-                if (!job.started_at) return 'Not started';
-
-                const startTime = new Date(job.started_at);
-                const endTime = job.completed_at ? new Date(job.completed_at) : new Date();
-                const duration = Math.floor((endTime - startTime) / 1000);
-
-                if (duration < 60) return `${duration}s`;
-                if (duration < 3600) return `${Math.floor(duration / 60)}m ${duration % 60}s`;
-
-                const hours = Math.floor(duration / 3600);
-                const minutes = Math.floor((duration % 3600) / 60);
-                return `${hours}h ${minutes}m`;
-            }
-
-            formatBytes(bytes) {
-                if (bytes === 0) return '0 Bytes';
-
-                const k = 1024;
-                const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-                const i = Math.floor(Math.log(bytes) / Math.log(k));
-
-                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-            }
-
-            showToast(message, type = 'info', duration = 5000) {
-                const toastContainer = document.getElementById('toastContainer');
-                if (!toastContainer) {
-                    // Create toast container if it doesn't exist
-                    const container = document.createElement('div');
-                    container.id = 'toastContainer';
-                    container.className = 'toast-container';
-                    document.body.appendChild(container);
-                }
-
-                const toast = document.createElement('div');
-                toast.className = `toast ${type}`;
-                
-                toast.innerHTML = `
-                    <span>${message}</span>
-                    <button onclick="this.parentElement.remove()" style="
-                        background: none;
-                        border: none;
-                        color: inherit;
-                        font-size: 18px;
-                        font-weight: bold;
-                        margin-left: 10px;
-                        cursor: pointer;
-                        padding: 0;
-                    ">×</button>
-                `;
-
-                toastContainer.appendChild(toast);
-
-                // Auto remove after duration
-                setTimeout(() => {
-                    if (toast.parentElement) {
-                        toast.remove();
-                    }
-                }, duration);
-            }
-
-            async cancelJob(jobId) {
-                if (!confirm('Are you sure you want to cancel this build job?')) {
-                    return;
-                }
-
-                try {
-                    const response = await fetch(`/api/jobs/${jobId}`, {
-                        method: 'DELETE'
-                    });
-
-                    if (!response.ok) {
-                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                    }
-
-                    this.showToast('Job cancelled successfully', 'success');
-                    await this.loadJobs();
-
-                } catch (error) {
-                    console.error('❌ Failed to cancel job:', error);
-                    this.showToast('Failed to cancel job', 'error');
-                }
-            }
-
-            showJobDetails(jobId) {
-                const job = this.jobs.find(j => j.id === jobId);
-                if (!job) return;
-
-                const details = {
-                    'Job ID': job.id,
-                    'Device': job.device,
-                    'OS ID': job.os_id,
-                    'Status': job.status,
-                    'Created': new Date(job.created_at).toLocaleString(),
-                    'Started': job.started_at ? new Date(job.started_at).toLocaleString() : 'Not started',
-                    'Completed': job.completed_at ? new Date(job.completed_at).toLocaleString() : 'Not completed',
-                    'Duration': this.calculateDuration(job)
-                };
-
-                if (job.results?.final_wim_path) {
-                    details['Output File'] = job.results.final_wim_path;
-                    details['File Size'] = `${job.results.final_wim_size_mb.toFixed(1)} MB`;
-                }
-
-                if (job.error) {
-                    details['Error'] = job.error;
-                }
-
-                let detailsText = 'Build Job Details:\n\n';
-                Object.entries(details).forEach(([key, value]) => {
-                    detailsText += `${key}: ${value}\n`;
-                });
-
-                alert(detailsText);
-            }
-
-            showJobLogs(jobId) {
-                // For now, just show a simple alert. In a full implementation, 
-                // this would open a modal with real-time log viewing
-                const job = this.jobs.find(j => j.id === jobId);
-                if (job) {
-                    alert(`Job Logs for ${job.device} - OS ${job.os_id}\n\nJob ID: ${jobId}\nStatus: ${job.status}\n\nLog viewing functionality would be implemented here.`);
-                }
-            }
-
-            setupPeriodicRefresh() {
-                // Refresh jobs every 30 seconds if not connected via WebSocket
-                setInterval(() => {
-                    if (!this.isConnected) {
-                        console.log('🔄 Periodic refresh (WebSocket disconnected)');
-                        this.loadJobs();
-                    }
-                }, 30000);
-            }
-
-            switchTab(tabName) {
-                // Update navigation
-                document.querySelectorAll('.nav-item').forEach(item => {
-                    item.classList.remove('active');
-                });
-                
-                // Find and activate the correct nav item
-                const navItems = document.querySelectorAll('.nav-item');
-                navItems.forEach(item => {
-                    if (item.textContent.toLowerCase().includes(tabName.toLowerCase())) {
-                        item.classList.add('active');
-                    }
-                });
-
-                // Update tab buttons
-                document.querySelectorAll('.tab-btn').forEach(btn => {
-                    btn.classList.remove('active');
-                    if (btn.getAttribute('data-tab') === tabName) {
-                        btn.classList.add('active');
-                    }
-                });
-
-                // Show/hide tab content
-                document.querySelectorAll('.tab-content').forEach(content => {
-                    content.classList.remove('active');
-                });
-
-                const targetTab = document.getElementById(tabName);
-                if (targetTab) {
-                    targetTab.classList.add('active');
-                }
-            }
-
-            switchLanguage(langCode) {
-                localStorage.setItem('kassiaLanguage', langCode);
-                // In a real implementation, this would reload with the selected language
-                this.showToast(`Language switched to ${langCode.toUpperCase()}`, 'info');
-            }
-        }
-
-        // Global functions for HTML onclick handlers
-        function switchTab(tabName) {
-            if (window.kassiaApp) {
-                window.kassiaApp.switchTab(tabName);
-            }
-        }
-
-        function refreshAssets() {
-            if (window.kassiaApp) {
-                window.kassiaApp.handleAssetFilterChange();
-            }
-        }
-
-        function refreshJobs() {
-            if (window.kassiaApp) {
-                window.kassiaApp.loadJobs();
-            }
-        }
-
-        function switchLanguage(langCode) {
-            if (window.kassiaApp) {
-                window.kassiaApp.switchLanguage(langCode);
-            }
-        }
-
-        // Initialize app when DOM is loaded
-        window.kassiaApp = new KassiaApp();
-
-        console.log('📦 Kassia WebUI JavaScript loaded successfully');
+            }, 100);
+        });
     </script>
 </body>
 </html>
