@@ -214,8 +214,8 @@ class LogEntry(BaseModel):
     job_id: Optional[str] = None
 
 # Language detection for templates
-def get_template_path(request: Request, template_name: str = "index.html") -> str:
-    """Determine template path based on the request language settings."""
+def get_template_path(request: Request, template_name: str = "index.html") -> tuple[str, str]:
+    """Determine template path and language based on the request settings."""
     # Path parameter takes highest precedence
     lang = request.path_params.get('lang') if hasattr(request, 'path_params') else None
 
@@ -240,9 +240,18 @@ def get_template_path(request: Request, template_name: str = "index.html") -> st
     template_path = Path("web/templates") / lang_template
     
     if template_path.exists():
-        return lang_template
+        return lang_template, lang
     else:
-        return "index.html"  # Fallback to default
+        return "index.html", lang  # Fallback to default
+
+
+def load_translations(lang: str) -> Dict[str, str]:
+    """Load translation dictionary for the given language."""
+    file_path = Path("web/translations") / f"{lang}.json"
+    if file_path.exists():
+        with open(file_path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return {}
 
 # API Routes with Logging
 
@@ -256,8 +265,10 @@ async def dashboard(request: Request, lang: str = None):
         'language': lang
     })
     
-    template_file = get_template_path(request)
-    return templates.TemplateResponse(template_file, {"request": request})
+    template_file, resolved_lang = get_template_path(request)
+    strings = load_translations(resolved_lang)
+    context = {"request": request, "lang": resolved_lang, "strings": strings}
+    return templates.TemplateResponse(template_file, context)
 
 @app.get("/api/devices")
 async def list_devices() -> List[DeviceInfo]:
