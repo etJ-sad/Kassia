@@ -1,37 +1,50 @@
-# web/app.py - Korrigierte Version mit Asset Provider Fix
+# web/app.py - WebUI mit Advanced Logging Integration
 
 """
-Kassia Web Interface - FastAPI Backend (Fixed)
-Modern web interface for Windows Image Preparation System
+Kassia Web Interface - FastAPI Backend mit Advanced Logging
 """
 
 from fastapi import FastAPI, HTTPException, BackgroundTasks, WebSocket, WebSocketDisconnect
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.requests import Request
 from pydantic import BaseModel
 from typing import List, Dict, Optional, Any
 import asyncio
 import json
-import logging
 import sys
 from pathlib import Path
 from datetime import datetime
 import uuid
+import time
 
 # Add parent to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+# Import logging system
+from app.utils.logging import (
+    get_logger, configure_logging, LogLevel, LogCategory, get_log_buffer
+)
+
+# Import existing modules
 from app.models.config import ConfigLoader
 from app.core.asset_providers import LocalAssetProvider
 from app.core.wim_handler import WimHandler, WimWorkflow, DismError
 from app.core.driver_integration import DriverIntegrator, DriverIntegrationManager
 from app.core.update_integration import UpdateIntegrator, UpdateIntegrationManager
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+# Configure logging for WebUI
+configure_logging(
+    level=LogLevel.INFO,
+    log_dir=Path("runtime/logs"),
+    enable_console=True,
+    enable_file=True,
+    enable_webui=True  # Enable WebUI logging
+)
+
+# Initialize logger
+logger = get_logger("kassia.webui")
 
 # FastAPI app
 app = FastAPI(
@@ -44,17 +57,26 @@ app = FastAPI(
 app.mount("/static", StaticFiles(directory="web/static"), name="static")
 templates = Jinja2Templates(directory="web/templates")
 
-# Global state for job management
+# Log startup
+logger.info("Kassia WebUI starting", LogCategory.WEBUI, {
+    'version': "2.0.0",
+    'startup_time': datetime.now().isoformat()
+})
+
+# Enhanced Job Status with Logging Integration
 class JobStatus:
-    """Job status tracking."""
+    """Job status tracking with integrated logging."""
+    
     def __init__(self):
         self.jobs: Dict[str, Dict] = {}
         self.active_connections: List[WebSocket] = []
+        self.logger = get_logger("kassia.webui.jobs")
     
-    def create_job(self, device: str, os_id: int) -> str:
-        """Create new job."""
+    def create_job(self, device: str, os_id: int, user_id: str = "web_user") -> str:
+        """Create new job with logging."""
         job_id = str(uuid.uuid4())
-        self.jobs[job_id] = {
+        
+        job_data = {
             'id': job_id,
             'device': device,
             'os_id': os_id,
@@ -68,42 +90,97 @@ class JobStatus:
             'completed_at': None,
             'error': None,
             'results': {},
-            'logs': []
+            'logs': [],
+            'user_id': user_id
         }
+        
+        self.jobs[job_id] = job_data
+        
+        self.logger.info("Job created", LogCategory.WEBUI, {
+            'job_id': job_id,
+            'device': device,
+            'os_id': os_id,
+            'user_id': user_id
+        })
+        
         return job_id
     
     def update_job(self, job_id: str, **kwargs):
-        """Update job status."""
-        if job_id in self.jobs:
-            self.jobs[job_id].update(kwargs)
-            # Broadcast to connected websockets
-            asyncio.create_task(self.broadcast_job_update(job_id))
+        """Update job status with logging."""
+        if job_id not in self.jobs:
+            self.logger.warning("Attempted to update non-existent job", LogCategory.WEBUI, {
+                'job_id': job_id
+            })
+            return
+        
+        old_status = self.jobs[job_id].get('status')
+        self.jobs[job_id].update(kwargs)
+        new_status = self.jobs[job_id].get('status')
+        
+        # Log status changes
+        if old_status != new_status:
+            self.logger.info("Job status changed", LogCategory.WEBUI, {
+                'job_id': job_id,
+                'old_status': old_status,
+                'new_status': new_status,
+                'progress': kwargs.get('progress'),
+                'current_step': kwargs.get('current_step')
+            })
+        
+        # Broadcast to connected websockets
+        asyncio.create_task(self.broadcast_job_update(job_id))
+    
+    def add_job_log(self, job_id: str, message: str, level: str = "INFO"):
+        """Add log entry to job."""
+        if job_id not in self.jobs:
+            return
+        
+        log_entry = {
+            'timestamp': datetime.now().isoformat(),
+            'level': level,
+            'message': message
+        }
+        
+        self.jobs[job_id]['logs'].append(log_entry)
+        
+        # Keep only last 100 log entries per job
+        if len(self.jobs[job_id]['logs']) > 100:
+            self.jobs[job_id]['logs'] = self.jobs[job_id]['logs'][-100:]
+        
+        # Broadcast update
+        asyncio.create_task(self.broadcast_job_update(job_id))
     
     async def broadcast_job_update(self, job_id: str):
         """Broadcast job update to all connected clients."""
-        if job_id in self.jobs:
-            message = {
-                'type': 'job_update',
-                'job_id': job_id,
-                'data': self.jobs[job_id]
-            }
-            
-            # Send to all connected websockets
-            disconnected = []
-            for connection in self.active_connections:
-                try:
-                    await connection.send_text(json.dumps(message))
-                except:
-                    disconnected.append(connection)
-            
-            # Remove disconnected clients
-            for conn in disconnected:
-                if conn in self.active_connections:
-                    self.active_connections.remove(conn)
+        if job_id not in self.jobs:
+            return
+        
+        message = {
+            'type': 'job_update',
+            'job_id': job_id,
+            'data': self.jobs[job_id]
+        }
+        
+        disconnected = []
+        for connection in self.active_connections:
+            try:
+                await connection.send_text(json.dumps(message))
+            except Exception as e:
+                self.logger.warning("WebSocket send failed", LogCategory.WEBUI, {
+                    'error': str(e)
+                })
+                disconnected.append(connection)
+        
+        # Remove disconnected clients
+        for conn in disconnected:
+            if conn in self.active_connections:
+                self.active_connections.remove(conn)
 
+
+# Global job status instance
 job_status = JobStatus()
 
-# Pydantic models for API
+# Pydantic models
 class BuildRequest(BaseModel):
     device: str
     os_id: int
@@ -123,25 +200,32 @@ class DeviceInfo(BaseModel):
     supported_os: List[int]
     description: Optional[str] = None
 
-# API Routes
+class LogEntry(BaseModel):
+    timestamp: str
+    level: str
+    category: str
+    component: str
+    message: str
+    details: Optional[Dict[str, Any]] = None
+    job_id: Optional[str] = None
+
+# API Routes with Logging
 
 @app.get("/", response_class=HTMLResponse)
 async def dashboard(request: Request):
     """Main dashboard page."""
+    logger.debug("Dashboard page requested", LogCategory.API, {
+        'client_ip': request.client.host,
+        'user_agent': request.headers.get('user-agent', 'unknown')
+    })
     return templates.TemplateResponse("index.html", {"request": request})
-
-@app.get("/index-{lang}.html", response_class=HTMLResponse)
-async def dashboard_lang(request: Request, lang: str):
-    """Language-specific dashboard page."""
-    supported = {"de", "en", "ru", "cs"}
-    if lang not in supported:
-        lang = "en"
-    template = f"index-{lang}.html"
-    return templates.TemplateResponse(template, {"request": request})
 
 @app.get("/api/devices")
 async def list_devices() -> List[DeviceInfo]:
-    """List available device configurations."""
+    """List available device configurations with logging."""
+    logger.log_operation_start("list_devices")
+    start_time = time.time()
+    
     try:
         device_configs_path = Path("config/device_configs")
         devices = []
@@ -156,23 +240,38 @@ async def list_devices() -> List[DeviceInfo]:
                         description=getattr(device_config, 'description', None)
                     ))
                 except Exception as e:
-                    logger.error(f"Failed to load device {json_file.stem}: {e}")
+                    logger.error("Failed to load device config", LogCategory.API, {
+                        'device_file': json_file.stem,
+                        'error': str(e)
+                    })
+        
+        duration = time.time() - start_time
+        logger.log_operation_success("list_devices", duration, {
+            'device_count': len(devices),
+            'devices': [d.device_id for d in devices]
+        })
         
         return devices
+        
     except Exception as e:
+        duration = time.time() - start_time
+        logger.log_operation_failure("list_devices", str(e), duration)
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/assets/{device}/{os_id}")
 async def get_assets(device: str, os_id: int) -> Dict[str, Any]:
-    """Get assets for specific device and OS - FIXED VERSION."""
+    """Get assets for specific device and OS with detailed logging."""
+    logger.set_context(device=device, os_id=os_id)
+    logger.log_operation_start("get_assets")
+    start_time = time.time()
+    
     try:
         # Load configuration
         kassia_config = ConfigLoader.create_kassia_config(device, os_id)
         
-        # FIXED: Create asset provider with proper build config integration
+        # Create asset provider with proper build config integration
         assets_path = Path("assets")
         
-        # Pass build config to asset provider for proper path resolution
         build_config_dict = {
             'driverRoot': kassia_config.build.driverRoot,
             'updateRoot': kassia_config.build.updateRoot,
@@ -183,21 +282,38 @@ async def get_assets(device: str, os_id: int) -> Dict[str, Any]:
         
         provider = LocalAssetProvider(assets_path, build_config=build_config_dict)
         
+        logger.info("Asset provider initialized", LogCategory.ASSET, {
+            'provider_config': build_config_dict
+        })
+        
         # Get SBI with proper path resolution
+        logger.debug("Discovering SBI assets", LogCategory.ASSET)
         sbi_asset = await provider.get_sbi(os_id)
         sbi_info = None
         if sbi_asset:
+            is_valid = await provider.validate_asset(sbi_asset)
             sbi_info = AssetInfo(
                 name=sbi_asset.name,
                 type="SBI",
                 path=str(sbi_asset.path),
                 size=sbi_asset.size,
-                valid=await provider.validate_asset(sbi_asset)
+                valid=is_valid
             )
+            logger.info("SBI asset found", LogCategory.ASSET, {
+                'name': sbi_asset.name,
+                'path': str(sbi_asset.path),
+                'size_mb': sbi_asset.size / (1024 * 1024) if sbi_asset.size else 0,
+                'valid': is_valid
+            })
+        else:
+            logger.warning("No SBI asset found", LogCategory.ASSET)
         
         # Get drivers
+        logger.debug("Discovering driver assets", LogCategory.DRIVER)
         drivers = await provider.get_drivers(device, os_id)
         driver_list = []
+        driver_validation_results = []
+        
         for driver in drivers:
             is_valid = await provider.validate_asset(driver)
             driver_list.append(AssetInfo(
@@ -207,10 +323,24 @@ async def get_assets(device: str, os_id: int) -> Dict[str, Any]:
                 size=driver.size,
                 valid=is_valid
             ))
+            driver_validation_results.append({
+                'name': driver.name,
+                'type': driver.driver_type.value,
+                'family_id': driver.family_id,
+                'valid': is_valid
+            })
+        
+        logger.info("Driver assets discovered", LogCategory.DRIVER, {
+            'count': len(drivers),
+            'validation_results': driver_validation_results
+        })
         
         # Get updates
+        logger.debug("Discovering update assets", LogCategory.UPDATE)
         updates = await provider.get_updates(os_id)
         update_list = []
+        update_validation_results = []
+        
         for update in updates:
             is_valid = await provider.validate_asset(update)
             update_list.append(AssetInfo(
@@ -220,10 +350,23 @@ async def get_assets(device: str, os_id: int) -> Dict[str, Any]:
                 size=update.size,
                 valid=is_valid
             ))
+            update_validation_results.append({
+                'name': update.name,
+                'type': update.update_type.value,
+                'version': update.update_version,
+                'valid': is_valid
+            })
+        
+        logger.info("Update assets discovered", LogCategory.UPDATE, {
+            'count': len(updates),
+            'validation_results': update_validation_results
+        })
         
         # Get Yunona scripts
+        logger.debug("Discovering Yunona scripts", LogCategory.ASSET)
         scripts = await provider.get_yunona_scripts()
         script_list = []
+        
         for script in scripts:
             is_valid = await provider.validate_asset(script)
             script_list.append(AssetInfo(
@@ -234,7 +377,12 @@ async def get_assets(device: str, os_id: int) -> Dict[str, Any]:
                 valid=is_valid
             ))
         
-        return {
+        logger.info("Yunona scripts discovered", LogCategory.ASSET, {
+            'count': len(scripts)
+        })
+        
+        # Build response
+        response = {
             "device": kassia_config.device.deviceId,
             "os_id": kassia_config.selectedOsId,
             "sbi": sbi_info.dict() if sbi_info else None,
@@ -245,20 +393,44 @@ async def get_assets(device: str, os_id: int) -> Dict[str, Any]:
             "wim_path": str(kassia_config.get_wim_path()) if kassia_config.get_wim_path() else None
         }
         
+        duration = time.time() - start_time
+        logger.log_operation_success("get_assets", duration, {
+            'sbi_found': bool(sbi_info),
+            'drivers_count': len(driver_list),
+            'updates_count': len(update_list),
+            'scripts_count': len(script_list)
+        })
+        
+        return response
+        
     except Exception as e:
-        logger.error(f"Failed to get assets for {device}/{os_id}: {e}")
+        duration = time.time() - start_time
+        logger.log_operation_failure("get_assets", str(e), duration)
         raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        logger.clear_context()
 
 @app.post("/api/build")
 async def start_build(build_request: BuildRequest, background_tasks: BackgroundTasks) -> Dict[str, str]:
-    """Start a new build job."""
+    """Start a new build job with comprehensive logging."""
+    logger.log_operation_start("start_build")
+    start_time = time.time()
+    
     try:
         # Create job
         job_id = job_status.create_job(build_request.device, build_request.os_id)
         
+        logger.info("Build job created", LogCategory.WEBUI, {
+            'job_id': job_id,
+            'device': build_request.device,
+            'os_id': build_request.os_id,
+            'skip_drivers': build_request.skip_drivers,
+            'skip_updates': build_request.skip_updates
+        })
+        
         # Start build in background
         background_tasks.add_task(
-            execute_build_job, 
+            execute_build_job_with_logging, 
             job_id, 
             build_request.device, 
             build_request.os_id,
@@ -266,54 +438,236 @@ async def start_build(build_request: BuildRequest, background_tasks: BackgroundT
             build_request.skip_updates
         )
         
+        duration = time.time() - start_time
+        logger.log_operation_success("start_build", duration, {
+            'job_id': job_id
+        })
+        
         return {"job_id": job_id, "status": "started"}
         
     except Exception as e:
-        logger.error(f"Failed to start build: {e}")
+        duration = time.time() - start_time
+        logger.log_operation_failure("start_build", str(e), duration)
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/jobs")
 async def list_jobs() -> List[Dict]:
-    """List all jobs."""
+    """List all jobs with logging."""
+    logger.debug("Jobs list requested", LogCategory.API, {
+        'job_count': len(job_status.jobs)
+    })
     return list(job_status.jobs.values())
 
 @app.get("/api/jobs/{job_id}")
 async def get_job(job_id: str) -> Dict:
-    """Get specific job status."""
+    """Get specific job status with logging."""
+    if job_id not in job_status.jobs:
+        logger.warning("Job not found", LogCategory.API, {
+            'job_id': job_id
+        })
+        raise HTTPException(status_code=404, detail="Job not found")
+    
+    logger.debug("Job details requested", LogCategory.API, {
+        'job_id': job_id,
+        'status': job_status.jobs[job_id]['status']
+    })
+    
+    return job_status.jobs[job_id]
+
+@app.get("/api/jobs/{job_id}/logs")
+async def get_job_logs(job_id: str) -> List[Dict]:
+    """Get job logs with filtering support."""
     if job_id not in job_status.jobs:
         raise HTTPException(status_code=404, detail="Job not found")
-    return job_status.jobs[job_id]
+    
+    # Get logs from both job-specific storage and global log buffer
+    job_logs = job_status.jobs[job_id]['logs']
+    
+    # Also get logs from the global log buffer
+    log_buffer = get_log_buffer()
+    if log_buffer:
+        buffer_logs = log_buffer.get_job_logs(job_id)
+        # Convert LogEntry objects to dictionaries
+        for log_entry in buffer_logs:
+            job_logs.append({
+                'timestamp': log_entry.timestamp,
+                'level': log_entry.level,
+                'message': log_entry.message,
+                'category': log_entry.category,
+                'component': log_entry.component
+            })
+    
+    logger.debug("Job logs requested", LogCategory.API, {
+        'job_id': job_id,
+        'log_count': len(job_logs)
+    })
+    
+    return job_logs
 
 @app.delete("/api/jobs/{job_id}")
 async def cancel_job(job_id: str) -> Dict[str, str]:
-    """Cancel/delete a job."""
+    """Cancel/delete a job with logging."""
     if job_id not in job_status.jobs:
+        logger.warning("Attempted to cancel non-existent job", LogCategory.API, {
+            'job_id': job_id
+        })
         raise HTTPException(status_code=404, detail="Job not found")
     
-    # Mark as cancelled
-    job_status.update_job(job_id, status="cancelled", completed_at=datetime.now().isoformat())
+    old_status = job_status.jobs[job_id]['status']
+    job_status.update_job(job_id, 
+        status="cancelled", 
+        completed_at=datetime.now().isoformat()
+    )
+    
+    logger.info("Job cancelled", LogCategory.WEBUI, {
+        'job_id': job_id,
+        'old_status': old_status
+    })
     
     return {"status": "cancelled"}
 
-# WebSocket for live updates
+@app.get("/api/system/logs")
+async def get_system_logs(limit: int = 100, level: Optional[str] = None) -> List[Dict]:
+    """Get system logs for WebUI display."""
+    log_buffer = get_log_buffer()
+    if not log_buffer:
+        return []
+    
+    logs = log_buffer.get_recent_logs(limit)
+    
+    # Filter by level if specified
+    if level:
+        logs = [log for log in logs if log.level == level.upper()]
+    
+    # Convert to dictionary format
+    log_dicts = [log.to_dict() for log in logs]
+    
+    logger.debug("System logs requested", LogCategory.API, {
+        'limit': limit,
+        'level_filter': level,
+        'returned_count': len(log_dicts)
+    })
+    
+    return log_dicts
+
+@app.get("/api/system/health")
+async def system_health() -> Dict[str, Any]:
+    """Get system health status with logging."""
+    logger.debug("System health check requested", LogCategory.API)
+    
+    try:
+        import psutil
+        import shutil
+        
+        # Get disk usage
+        disk_usage = shutil.disk_usage('.')
+        disk_free_gb = disk_usage.free / (1024**3)
+        disk_total_gb = disk_usage.total / (1024**3)
+        disk_used_percent = ((disk_usage.total - disk_usage.free) / disk_usage.total) * 100
+        
+        # Get memory usage
+        memory = psutil.virtual_memory()
+        
+        # Check DISM availability
+        try:
+            wim_handler = WimHandler()
+            dism_available = True
+        except:
+            dism_available = False
+        
+        # Count active jobs
+        active_builds = len([j for j in job_status.jobs.values() if j['status'] == 'running'])
+        
+        health_data = {
+            "status": "healthy",
+            "timestamp": datetime.now().isoformat(),
+            "disk_usage": {
+                "free_gb": round(disk_free_gb, 2),
+                "total_gb": round(disk_total_gb, 2),
+                "used_percent": round(disk_used_percent, 1)
+            },
+            "memory_usage": {
+                "percent": memory.percent,
+                "available_gb": round(memory.available / (1024**3), 2),
+                "total_gb": round(memory.total / (1024**3), 2)
+            },
+            "active_builds": active_builds,
+            "total_jobs": len(job_status.jobs),
+            "dism_available": dism_available,
+            "log_buffer_size": len(get_log_buffer().buffer) if get_log_buffer() else 0
+        }
+        
+        logger.info("System health check completed", LogCategory.SYSTEM, health_data)
+        
+        return health_data
+        
+    except Exception as e:
+        logger.error("System health check failed", LogCategory.SYSTEM, {
+            'error': str(e)
+        })
+        return {
+            "status": "unhealthy",
+            "error": str(e),
+            "timestamp": datetime.now().isoformat()
+        }
+
+# WebSocket for live updates with logging
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
-    """WebSocket endpoint for live updates."""
+    """WebSocket endpoint for live updates with connection logging."""
     await websocket.accept()
     job_status.active_connections.append(websocket)
     
+    client_info = {
+        'client_ip': websocket.client.host,
+        'connection_count': len(job_status.active_connections)
+    }
+    
+    logger.info("WebSocket connection established", LogCategory.WEBUI, client_info)
+    
     try:
         while True:
-            # Keep connection alive
+            # Keep connection alive and send periodic system info
             await asyncio.sleep(30)
-            await websocket.send_text(json.dumps({"type": "ping"}))
+            
+            # Send heartbeat with system status
+            heartbeat = {
+                "type": "heartbeat",
+                "timestamp": datetime.now().isoformat(),
+                "active_connections": len(job_status.active_connections),
+                "active_jobs": len([j for j in job_status.jobs.values() if j['status'] == 'running'])
+            }
+            
+            await websocket.send_text(json.dumps(heartbeat))
+            
     except WebSocketDisconnect:
         if websocket in job_status.active_connections:
             job_status.active_connections.remove(websocket)
+        
+        logger.info("WebSocket connection closed", LogCategory.WEBUI, {
+            'client_ip': websocket.client.host,
+            'remaining_connections': len(job_status.active_connections)
+        })
+    except Exception as e:
+        logger.error("WebSocket error", LogCategory.WEBUI, {
+            'error': str(e),
+            'client_ip': websocket.client.host
+        })
+        if websocket in job_status.active_connections:
+            job_status.active_connections.remove(websocket)
 
-# Background job execution
-async def execute_build_job(job_id: str, device: str, os_id: int, skip_drivers: bool, skip_updates: bool):
-    """Execute build job in background - FIXED VERSION."""
+# Background job execution with comprehensive logging
+async def execute_build_job_with_logging(job_id: str, device: str, os_id: int, 
+                                       skip_drivers: bool, skip_updates: bool):
+    """Execute build job in background with detailed logging."""
+    
+    # Set up job-specific logger context
+    job_logger = get_logger("kassia.webui.build")
+    job_logger.set_context(job_id=job_id, device=device, os_id=os_id)
+    
+    job_logger.log_operation_start("build_job")
+    job_start_time = time.time()
+    
     try:
         # Update job status
         job_status.update_job(
@@ -325,7 +679,11 @@ async def execute_build_job(job_id: str, device: str, os_id: int, skip_drivers: 
             progress=10
         )
         
+        job_status.add_job_log(job_id, "Build job started", "INFO")
+        job_logger.info("Build job execution started", LogCategory.WORKFLOW)
+        
         # Load configuration
+        job_logger.info("Loading configuration", LogCategory.CONFIG)
         kassia_config = ConfigLoader.create_kassia_config(device, os_id)
         
         job_status.update_job(
@@ -335,7 +693,13 @@ async def execute_build_job(job_id: str, device: str, os_id: int, skip_drivers: 
             progress=20
         )
         
-        # FIXED: Create asset provider with proper build config
+        job_status.add_job_log(job_id, "Configuration loaded successfully", "INFO")
+        job_logger.info("Configuration loaded", LogCategory.CONFIG, {
+            'device_id': kassia_config.device.deviceId,
+            'selected_os': kassia_config.selectedOsId
+        })
+        
+        # Create asset provider with proper build config
         assets_path = Path("assets")
         build_config_dict = {
             'driverRoot': kassia_config.build.driverRoot,
@@ -347,17 +711,29 @@ async def execute_build_job(job_id: str, device: str, os_id: int, skip_drivers: 
         
         provider = LocalAssetProvider(assets_path, build_config=build_config_dict)
         
+        # Discover assets
+        job_logger.info("Discovering assets", LogCategory.ASSET)
         sbi_asset = await provider.get_sbi(os_id)
         drivers = await provider.get_drivers(device, os_id)
         updates = await provider.get_updates(os_id)
         
+        job_status.add_job_log(job_id, f"Assets discovered: SBI={bool(sbi_asset)}, Drivers={len(drivers)}, Updates={len(updates)}", "INFO")
+        job_logger.info("Asset discovery completed", LogCategory.ASSET, {
+            'sbi_found': bool(sbi_asset),
+            'drivers_count': len(drivers),
+            'updates_count': len(updates)
+        })
+        
         if not sbi_asset:
+            error_msg = "No SBI found for OS ID"
             job_status.update_job(
                 job_id,
                 status="failed",
-                error="No SBI found for OS ID",
+                error=error_msg,
                 completed_at=datetime.now().isoformat()
             )
+            job_status.add_job_log(job_id, error_msg, "ERROR")
+            job_logger.error(error_msg, LogCategory.ASSET)
             return
         
         job_status.update_job(
@@ -373,12 +749,18 @@ async def execute_build_job(job_id: str, device: str, os_id: int, skip_drivers: 
         )
         
         # Initialize WIM workflow
+        job_logger.info("Initializing WIM workflow", LogCategory.WIM)
         wim_handler = WimHandler()
         workflow = WimWorkflow(wim_handler)
         
         # Prepare WIM
+        job_status.add_job_log(job_id, "Copying WIM to temporary location", "INFO")
         temp_dir = Path(kassia_config.build.tempPath)
         temp_wim = await workflow.prepare_wim_for_modification(sbi_asset.path, temp_dir)
+        
+        job_logger.info("WIM preparation completed", LogCategory.WIM, {
+            'temp_wim': str(temp_wim)
+        })
         
         job_status.update_job(
             job_id,
@@ -388,8 +770,14 @@ async def execute_build_job(job_id: str, device: str, os_id: int, skip_drivers: 
         )
         
         # Mount WIM
+        job_status.add_job_log(job_id, "Mounting WIM for modification", "INFO")
         mount_point = Path(kassia_config.build.mountPoint)
         mount_info = await workflow.mount_wim_for_modification(temp_wim, mount_point)
+        
+        job_logger.info("WIM mounted successfully", LogCategory.WIM, {
+            'mount_point': str(mount_point),
+            'read_write': mount_info.read_write
+        })
         
         # Driver integration
         if not skip_drivers and drivers:
@@ -399,6 +787,11 @@ async def execute_build_job(job_id: str, device: str, os_id: int, skip_drivers: 
                 step_number=5,
                 progress=50
             )
+            
+            job_status.add_job_log(job_id, f"Starting driver integration ({len(drivers)} drivers)", "INFO")
+            job_logger.info("Starting driver integration", LogCategory.DRIVER, {
+                'driver_count': len(drivers)
+            })
             
             driver_integrator = DriverIntegrator()
             driver_manager = DriverIntegrationManager(driver_integrator)
@@ -415,6 +808,10 @@ async def execute_build_job(job_id: str, device: str, os_id: int, skip_drivers: 
                     'driver_integration': driver_result
                 }
             )
+            
+            success_msg = f"Driver integration completed: {driver_result['successful_count']}/{len(drivers)} successful"
+            job_status.add_job_log(job_id, success_msg, "INFO")
+            job_logger.info("Driver integration completed", LogCategory.DRIVER, driver_result)
         
         # Update integration
         if not skip_updates and updates:
@@ -424,6 +821,11 @@ async def execute_build_job(job_id: str, device: str, os_id: int, skip_drivers: 
                 step_number=6,
                 progress=70
             )
+            
+            job_status.add_job_log(job_id, f"Starting update integration ({len(updates)} updates)", "INFO")
+            job_logger.info("Starting update integration", LogCategory.UPDATE, {
+                'update_count': len(updates)
+            })
             
             update_integrator = UpdateIntegrator()
             update_manager = UpdateIntegrationManager(update_integrator)
@@ -439,6 +841,10 @@ async def execute_build_job(job_id: str, device: str, os_id: int, skip_drivers: 
                     'update_integration': update_result
                 }
             )
+            
+            success_msg = f"Update integration completed: {update_result['successful_count']}/{len(updates)} successful"
+            job_status.add_job_log(job_id, success_msg, "INFO")
+            job_logger.info("Update integration completed", LogCategory.UPDATE, update_result)
         
         # Export WIM
         job_status.update_job(
@@ -447,6 +853,9 @@ async def execute_build_job(job_id: str, device: str, os_id: int, skip_drivers: 
             step_number=7,
             progress=85
         )
+        
+        job_status.add_job_log(job_id, "Creating final WIM image", "INFO")
+        job_logger.info("Starting WIM export", LogCategory.WIM)
         
         export_dir = Path(kassia_config.build.exportPath)
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -466,11 +875,14 @@ async def execute_build_job(job_id: str, device: str, os_id: int, skip_drivers: 
             progress=95
         )
         
+        job_status.add_job_log(job_id, "Cleaning up temporary files", "INFO")
         await workflow.cleanup_workflow(keep_export=True)
         
         # Complete
         final_size = final_wim.stat().st_size
         final_size_mb = final_size / (1024 * 1024)
+        
+        job_duration = time.time() - job_start_time
         
         job_status.update_job(
             job_id,
@@ -482,32 +894,76 @@ async def execute_build_job(job_id: str, device: str, os_id: int, skip_drivers: 
             results={
                 **job_status.jobs[job_id]['results'],
                 'final_wim_path': str(final_wim),
-                'final_wim_size_mb': final_size_mb
+                'final_wim_size_mb': final_size_mb,
+                'total_duration_seconds': job_duration
             }
         )
         
+        success_msg = f"Build completed successfully! Final WIM: {final_size_mb:.1f} MB"
+        job_status.add_job_log(job_id, success_msg, "INFO")
+        job_logger.log_operation_success("build_job", job_duration, {
+            'final_wim': str(final_wim),
+            'final_size_mb': final_size_mb
+        })
+        
     except Exception as e:
-        logger.error(f"Build job {job_id} failed: {e}")
+        job_duration = time.time() - job_start_time
+        error_msg = str(e)
+        
+        job_logger.log_operation_failure("build_job", error_msg, job_duration)
+        
         job_status.update_job(
             job_id,
             status="failed",
-            error=str(e),
+            error=error_msg,
             completed_at=datetime.now().isoformat()
         )
+        
+        job_status.add_job_log(job_id, f"Build failed: {error_msg}", "ERROR")
+        
+    finally:
+        job_logger.clear_context()
 
 # Health check
 @app.get("/api/health")
 async def health_check():
-    """Health check endpoint."""
-    return {"status": "healthy", "timestamp": datetime.now().isoformat()}
+    """Health check endpoint with logging."""
+    logger.debug("Health check requested", LogCategory.API)
+    return {
+        "status": "healthy", 
+        "timestamp": datetime.now().isoformat(),
+        "version": "2.0.0"
+    }
+
+# Startup event
+@app.on_event("startup")
+async def startup_event():
+    """Log WebUI startup."""
+    logger.info("Kassia WebUI started successfully", LogCategory.WEBUI, {
+        'startup_complete': True,
+        'endpoints_count': len(app.routes)
+    })
+
+# Shutdown event
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Log WebUI shutdown."""
+    logger.info("Kassia WebUI shutting down", LogCategory.WEBUI, {
+        'active_connections': len(job_status.active_connections),
+        'active_jobs': len([j for j in job_status.jobs.values() if j['status'] == 'running'])
+    })
 
 if __name__ == "__main__":
     import uvicorn
-    print("🌐 Starting Kassia Web Interface...")
-    print("=" * 50)
+    
+    logger.info("Starting Kassia WebUI server", LogCategory.WEBUI)
+    
+    print("🌐 Starting Kassia Web Interface with Advanced Logging...")
+    print("=" * 60)
     print("🚀 FastAPI server starting...")
     print("📊 Dashboard: http://localhost:8000")
     print("📋 API Docs: http://localhost:8000/docs")
-    print("=" * 50)
+    print("📜 Logs: runtime/logs/")
+    print("=" * 60)
     
     uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)
