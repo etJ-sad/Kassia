@@ -1,7 +1,7 @@
-# web/app.py - WebUI mit Advanced Logging Integration
+# web/app.py - Vollständige WebUI mit Datenbank Integration
 
 """
-Kassia Web Interface - FastAPI Backend mit Advanced Logging
+Kassia Web Interface - FastAPI Backend mit Advanced Logging und Database Integration
 """
 
 from fastapi import FastAPI, HTTPException, BackgroundTasks, WebSocket, WebSocketDisconnect
@@ -28,6 +28,9 @@ from app.utils.logging import (
     get_job_logger, create_job_logger, finalize_job_logging, get_job_log_files
 )
 
+# Import database system
+from app.utils.job_database import get_job_database, init_job_database
+
 # Import existing modules
 from app.models.config import ConfigLoader
 from app.core.asset_providers import LocalAssetProvider
@@ -47,10 +50,20 @@ configure_logging(
 # Initialize logger
 logger = get_logger("kassia.webui")
 
+# Initialize database
+print("🗄️ Initializing job database...")
+job_db = init_job_database(Path("runtime/data/kassia_webui_jobs.db"))
+
+# Log database initialization
+logger.info("Database initialized", LogCategory.WEBUI, {
+    'database_path': str(job_db.db_path),
+    'database_size_mb': job_db.get_database_info().get('database_size_mb', 0)
+})
+
 # FastAPI app
 app = FastAPI(
     title="Kassia Web Interface",
-    description="Windows Image Preparation System - Web Edition",
+    description="Windows Image Preparation System - Web Edition with Database Integration",
     version="2.0.0"
 )
 
@@ -61,20 +74,52 @@ templates = Jinja2Templates(directory="web/templates")
 # Log startup
 logger.info("Kassia WebUI starting", LogCategory.WEBUI, {
     'version': "2.0.0",
-    'startup_time': datetime.now().isoformat()
+    'startup_time': datetime.now().isoformat(),
+    'database_enabled': True
 })
 
-# Enhanced Job Status with Logging Integration
+# Enhanced Job Status with Database Integration
 class JobStatus:
-    """Job status tracking with integrated logging."""
+    """Job status tracking mit integrierter Datenbank."""
     
     def __init__(self):
-        self.jobs: Dict[str, Dict] = {}
         self.active_connections: List[WebSocket] = []
         self.logger = get_logger("kassia.webui.jobs")
+        self.job_db = get_job_database()
+        
+        # Load existing jobs from database on startup
+        self._load_jobs_from_database()
     
-    def create_job(self, device: str, os_id: int, user_id: str = "web_user") -> str:
-        """Create new job with logging."""
+    def _load_jobs_from_database(self):
+        """Load all jobs from database on startup."""
+        try:
+            jobs = self.job_db.get_all_jobs()
+            self.logger.info(f"Loaded {len(jobs)} jobs from database", LogCategory.WEBUI)
+            
+            # Reset running jobs to failed (app was restarted while job was running)
+            interrupted_jobs = []
+            for job in jobs:
+                if job['status'] == 'running':
+                    self.logger.warning(f"Found interrupted job {job['id']}, marking as failed")
+                    self.job_db.update_job(job['id'], {
+                        'status': 'failed',
+                        'error': 'Application restart during execution',
+                        'completed_at': datetime.now().isoformat()
+                    })
+                    interrupted_jobs.append(job['id'])
+            
+            if interrupted_jobs:
+                self.logger.info("Marked interrupted jobs as failed", LogCategory.WEBUI, {
+                    'interrupted_jobs': interrupted_jobs
+                })
+            
+        except Exception as e:
+            self.logger.error(f"Failed to load jobs from database: {e}", LogCategory.WEBUI)
+    
+    def create_job(self, device: str, os_id: int, user_id: str = "web_user", 
+                   skip_drivers: bool = False, skip_updates: bool = False, 
+                   skip_validation: bool = False) -> str:
+        """Create new job with database persistence."""
         job_id = str(uuid.uuid4())
         
         job_data = {
@@ -91,84 +136,105 @@ class JobStatus:
             'completed_at': None,
             'error': None,
             'results': {},
-            'logs': [],
-            'user_id': user_id
+            'user_id': user_id,
+            'skip_drivers': skip_drivers,
+            'skip_updates': skip_updates,
+            'skip_validation': skip_validation,
+            'created_by': 'webui'
         }
         
-        self.jobs[job_id] = job_data
-        
-        self.logger.info("Job created", LogCategory.WEBUI, {
-            'job_id': job_id,
-            'device': device,
-            'os_id': os_id,
-            'user_id': user_id
-        })
-        
-        # Create dedicated job logger
-        create_job_logger(job_id)
-        
-        return job_id
+        # Save to database
+        if self.job_db.create_job(job_data):
+            self.logger.info("Job created and saved to database", LogCategory.WEBUI, {
+                'job_id': job_id,
+                'device': device,
+                'os_id': os_id,
+                'user_id': user_id
+            })
+            
+            # Create dedicated job logger
+            create_job_logger(job_id)
+            
+            return job_id
+        else:
+            raise Exception("Failed to save job to database")
     
     def update_job(self, job_id: str, **kwargs):
-        """Update job status with logging."""
-        if job_id not in self.jobs:
-            self.logger.warning("Attempted to update non-existent job", LogCategory.WEBUI, {
+        """Update job status with database persistence."""
+        
+        # Update in database
+        if self.job_db.update_job(job_id, kwargs):
+            # Get old status for logging
+            old_job = self.job_db.get_job(job_id)
+            old_status = old_job.get('status') if old_job else None
+            new_status = kwargs.get('status')
+            
+            # Log status changes
+            if old_status != new_status and new_status:
+                self.logger.info("Job status changed", LogCategory.WEBUI, {
+                    'job_id': job_id,
+                    'old_status': old_status,
+                    'new_status': new_status,
+                    'progress': kwargs.get('progress'),
+                    'current_step': kwargs.get('current_step')
+                })
+            
+            # Broadcast to connected websockets
+            asyncio.create_task(self.broadcast_job_update(job_id))
+        else:
+            self.logger.warning("Failed to update job in database", LogCategory.WEBUI, {
                 'job_id': job_id
             })
-            return
-        
-        old_status = self.jobs[job_id].get('status')
-        self.jobs[job_id].update(kwargs)
-        new_status = self.jobs[job_id].get('status')
-        
-        # Log status changes
-        if old_status != new_status:
-            self.logger.info("Job status changed", LogCategory.WEBUI, {
-                'job_id': job_id,
-                'old_status': old_status,
-                'new_status': new_status,
-                'progress': kwargs.get('progress'),
-                'current_step': kwargs.get('current_step')
-            })
-        
-        # Broadcast to connected websockets
-        asyncio.create_task(self.broadcast_job_update(job_id))
     
-    def add_job_log(self, job_id: str, message: str, level: str = "INFO"):
-        """Add log entry to job."""
-        if job_id not in self.jobs:
-            return
+    def add_job_log(self, job_id: str, message: str, level: str = "INFO", 
+                   component: str = "webui", category: str = "JOB"):
+        """Add log entry to job with database persistence."""
+        timestamp = datetime.now().isoformat()
         
-        log_entry = {
-            'timestamp': datetime.now().isoformat(),
-            'level': level,
-            'message': message
-        }
-        
-        self.jobs[job_id]['logs'].append(log_entry)
-        
-        # Keep only last 100 log entries per job
-        if len(self.jobs[job_id]['logs']) > 100:
-            self.jobs[job_id]['logs'] = self.jobs[job_id]['logs'][-100:]
+        # Save to database
+        self.job_db.add_job_log(
+            job_id=job_id,
+            timestamp=timestamp,
+            level=level,
+            message=message,
+            component=component,
+            category=category
+        )
         
         # Broadcast update
         asyncio.create_task(self.broadcast_job_update(job_id))
     
     async def broadcast_job_update(self, job_id: str):
         """Broadcast job update to all connected clients."""
-        if job_id not in self.jobs:
+        # Get current job data from database
+        job_data = self.job_db.get_job(job_id)
+        
+        if not job_data:
             return
+        
+        # Add recent logs to the broadcast
+        recent_logs = self.job_db.get_job_logs(job_id, limit=10)
+        job_data['logs'] = [
+            {
+                'timestamp': log['timestamp'],
+                'level': log['level'],
+                'message': log['message'],
+                'category': log.get('category', 'JOB'),
+                'component': log.get('component', 'webui')
+            }
+            for log in recent_logs
+        ]
         
         message = {
             'type': 'job_update',
             'job_id': job_id,
-            'data': self.jobs[job_id]
+            'data': job_data
         }
         
         disconnected = []
         for connection in self.active_connections:
             try:
-                await connection.send_text(json.dumps(message))
+                await connection.send_text(json.dumps(message, default=str))
             except Exception as e:
                 self.logger.warning("WebSocket send failed", LogCategory.WEBUI, {
                     'error': str(e)
@@ -179,7 +245,42 @@ class JobStatus:
         for conn in disconnected:
             if conn in self.active_connections:
                 self.active_connections.remove(conn)
+    
+    def get_all_jobs(self) -> List[Dict]:
+        """Get all jobs from database."""
+        return self.job_db.get_all_jobs()
+    
+    def get_job(self, job_id: str) -> Optional[Dict]:
+        """Get single job from database."""
+        return self.job_db.get_job(job_id)
+    
+    def cancel_job(self, job_id: str) -> bool:
+        """Cancel job and update in database."""
+        updates = {
+            'status': 'cancelled',
+            'completed_at': datetime.now().isoformat()
+        }
+        
+        if self.job_db.update_job(job_id, updates):
+            # Finalize job logging
+            finalize_job_logging(job_id, "cancelled")
+            
+            self.logger.info("Job cancelled", LogCategory.WEBUI, {
+                'job_id': job_id
+            })
+            
+            return True
+        
+        return False
 
+    def delete_job(self, job_id: str) -> bool:
+        """Delete job from database."""
+        if self.job_db.delete_job(job_id):
+            self.logger.info("Job deleted from database", LogCategory.WEBUI, {
+                'job_id': job_id
+            })
+            return True
+        return False
 
 # Global job status instance
 job_status = JobStatus()
@@ -253,7 +354,7 @@ def load_translations(lang: str) -> Dict[str, str]:
             return json.load(f)
     return {}
 
-# API Routes with Logging
+# API Routes with Database Integration
 
 @app.get("/", response_class=HTMLResponse)
 @app.get("/index-{lang}.html", response_class=HTMLResponse)
@@ -462,13 +563,19 @@ async def get_assets(device: str, os_id: int) -> Dict[str, Any]:
 
 @app.post("/api/build")
 async def start_build(build_request: BuildRequest, background_tasks: BackgroundTasks) -> Dict[str, str]:
-    """Start a new build job with comprehensive logging."""
+    """Start a new build job with database persistence."""
     logger.log_operation_start("start_build")
     start_time = time.time()
     
     try:
-        # Create job
-        job_id = job_status.create_job(build_request.device, build_request.os_id)
+        # Create job with all build parameters
+        job_id = job_status.create_job(
+            build_request.device, 
+            build_request.os_id,
+            skip_drivers=build_request.skip_drivers,
+            skip_updates=build_request.skip_updates,
+            skip_validation=build_request.skip_validation
+        )
         
         logger.info("Build job created", LogCategory.WEBUI, {
             'job_id': job_id,
@@ -485,7 +592,8 @@ async def start_build(build_request: BuildRequest, background_tasks: BackgroundT
             build_request.device, 
             build_request.os_id,
             build_request.skip_drivers,
-            build_request.skip_updates
+            build_request.skip_updates,
+            build_request.skip_validation
         )
         
         duration = time.time() - start_time
@@ -501,95 +609,81 @@ async def start_build(build_request: BuildRequest, background_tasks: BackgroundT
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/jobs")
-async def list_jobs() -> List[Dict]:
-    """List all jobs with logging."""
-    logger.debug("Jobs list requested", LogCategory.API, {
-        'job_count': len(job_status.jobs)
-    })
-    return list(job_status.jobs.values())
+async def list_jobs(limit: int = 50, status: str = None) -> List[Dict]:
+    """List all jobs from database with optional filtering."""
+    try:
+        jobs = job_status.get_all_jobs()
+        
+        # Apply status filter if provided
+        if status:
+            jobs = [job for job in jobs if job['status'] == status]
+        
+        # Apply limit
+        jobs = jobs[:limit]
+        
+        logger.debug("Jobs list requested", LogCategory.API, {
+            'job_count': len(jobs),
+            'status_filter': status,
+            'limit': limit
+        })
+        return jobs
+    except Exception as e:
+        logger.error("Failed to list jobs", LogCategory.API, {'error': str(e)})
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/jobs/{job_id}")
 async def get_job(job_id: str) -> Dict:
-    """Get specific job status with logging."""
-    if job_id not in job_status.jobs:
-        logger.warning("Job not found", LogCategory.API, {
+    """Get specific job status from database."""
+    job = job_status.get_job(job_id)
+    
+    if not job:
+        logger.warning("Job not found in database", LogCategory.API, {
             'job_id': job_id
         })
         raise HTTPException(status_code=404, detail="Job not found")
     
     logger.debug("Job details requested", LogCategory.API, {
         'job_id': job_id,
-        'status': job_status.jobs[job_id]['status']
+        'status': job['status']
     })
     
-    return job_status.jobs[job_id]
+    return job
 
-# NEW: Enhanced job log endpoints with different sources
 @app.get("/api/jobs/{job_id}/logs")
-async def get_job_logs(job_id: str, source: str = "buffer") -> List[Dict]:
-    """Get job logs with different sources."""
-    if job_id not in job_status.jobs:
+async def get_job_logs(job_id: str, source: str = "database", level: str = None, limit: int = 1000) -> List[Dict]:
+    """Get job logs from database with filtering."""
+    job = job_status.get_job(job_id)
+    if not job:
         raise HTTPException(status_code=404, detail="Job not found")
     
-    if source == "file":
-        # Get logs from dedicated job file
-        log_buffer = get_log_buffer()
-        if log_buffer:
-            job_logger = log_buffer.get_job_logger(job_id)
-            if job_logger:
-                entries = job_logger.get_log_content()
-                logger.debug("Job file logs requested", LogCategory.API, {
-                    'job_id': job_id,
-                    'log_count': len(entries)
-                })
-                return entries
+    try:
+        if source == "errors":
+            # Get only error logs
+            logs = job_db.get_job_logs(job_id, level_filter="ERROR", limit=limit)
+        else:
+            # Get all logs (default: database)
+            logs = job_db.get_job_logs(job_id, level_filter=level, limit=limit)
         
-        raise HTTPException(status_code=404, detail="Job log file not found")
-    
-    elif source == "errors":
-        # Get only error logs from job file
-        log_buffer = get_log_buffer()
-        if log_buffer:
-            job_logger = log_buffer.get_job_logger(job_id)
-            if job_logger:
-                entries = job_logger.get_error_content()
-                logger.debug("Job error logs requested", LogCategory.API, {
-                    'job_id': job_id,
-                    'error_count': len(entries)
-                })
-                return entries
-        
-        raise HTTPException(status_code=404, detail="Job error log file not found")
-    
-    else:
-        # Default: Get logs from buffer (original behavior)
-        job_logs = job_status.jobs[job_id]['logs']
-        
-        # Also get logs from the global log buffer
-        log_buffer = get_log_buffer()
-        if log_buffer:
-            buffer_logs = log_buffer.get_job_logs(job_id)
-            # Convert LogEntry objects to dictionaries
-            for log_entry in buffer_logs:
-                job_logs.append({
-                    'timestamp': log_entry.timestamp,
-                    'level': log_entry.level,
-                    'message': log_entry.message,
-                    'category': log_entry.category,
-                    'component': log_entry.component
-                })
-        
-        logger.debug("Job buffer logs requested", LogCategory.API, {
+        logger.debug("Job logs requested", LogCategory.API, {
             'job_id': job_id,
-            'log_count': len(job_logs)
+            'source': source,
+            'level_filter': level,
+            'log_count': len(logs)
         })
         
-        return job_logs
+        return logs
+        
+    except Exception as e:
+        logger.error("Failed to get job logs", LogCategory.API, {
+            'job_id': job_id,
+            'error': str(e)
+        })
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/jobs/{job_id}/log-files")
 async def get_job_log_files(job_id: str) -> Dict[str, Any]:
     """Get information about job log files."""
-    if job_id not in job_status.jobs:
+    if not job_status.get_job(job_id):
         raise HTTPException(status_code=404, detail="Job not found")
     
     log_files = get_job_log_files(job_id)
@@ -625,7 +719,7 @@ async def get_job_log_files(job_id: str) -> Dict[str, Any]:
 @app.get("/api/jobs/{job_id}/download-log")
 async def download_job_log(job_id: str, log_type: str = "main"):
     """Download job log file."""
-    if job_id not in job_status.jobs:
+    if not job_status.get_job(job_id):
         raise HTTPException(status_code=404, detail="Job not found")
     
     log_buffer = get_log_buffer()
@@ -656,28 +750,88 @@ async def download_job_log(job_id: str, log_type: str = "main"):
 
 @app.delete("/api/jobs/{job_id}")
 async def cancel_job(job_id: str) -> Dict[str, str]:
-    """Cancel/delete a job with logging."""
-    if job_id not in job_status.jobs:
-        logger.warning("Attempted to cancel non-existent job", LogCategory.API, {
+    """Cancel/delete a job in database."""
+    if not job_status.cancel_job(job_id):
+        logger.warning("Failed to cancel job", LogCategory.API, {
             'job_id': job_id
         })
-        raise HTTPException(status_code=404, detail="Job not found")
-    
-    old_status = job_status.jobs[job_id]['status']
-    job_status.update_job(job_id, 
-        status="cancelled", 
-        completed_at=datetime.now().isoformat()
-    )
-    
-    # Finalize job logging
-    finalize_job_logging(job_id, "cancelled")
-    
-    logger.info("Job cancelled", LogCategory.WEBUI, {
-        'job_id': job_id,
-        'old_status': old_status
-    })
+        raise HTTPException(status_code=404, detail="Job not found or could not be cancelled")
     
     return {"status": "cancelled"}
+
+@app.delete("/api/jobs/{job_id}/delete")
+async def delete_job(job_id: str) -> Dict[str, str]:
+    """Permanently delete a job from database."""
+    if not job_status.delete_job(job_id):
+        logger.warning("Failed to delete job", LogCategory.API, {
+            'job_id': job_id
+        })
+        raise HTTPException(status_code=404, detail="Job not found or could not be deleted")
+    
+    return {"status": "deleted"}
+
+# =================== DATABASE MANAGEMENT ROUTES ===================
+
+@app.get("/api/admin/database/info")
+async def get_database_info() -> Dict[str, Any]:
+    """Get database information and statistics."""
+    try:
+        db_info = job_db.get_database_info()
+        
+        logger.info("Database info requested", LogCategory.API, db_info)
+        
+        return db_info
+        
+    except Exception as e:
+        logger.error("Failed to get database info", LogCategory.API, {'error': str(e)})
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/admin/statistics")
+async def get_statistics(days: int = 30) -> List[Dict[str, Any]]:
+    """Get job statistics for the last N days."""
+    try:
+        stats = job_db.get_statistics(days)
+        
+        logger.debug("Statistics requested", LogCategory.API, {
+            'days': days,
+            'statistics_count': len(stats)
+        })
+        
+        return stats
+        
+    except Exception as e:
+        logger.error("Failed to get statistics", LogCategory.API, {'error': str(e)})
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/admin/maintenance/cleanup")
+async def cleanup_old_data(days: int = 90) -> Dict[str, str]:
+    """Cleanup old job data from database."""
+    try:
+        job_db.cleanup_old_data(days)
+        
+        logger.info("Database cleanup completed", LogCategory.API, {
+            'cleanup_days': days
+        })
+        
+        return {"status": "cleanup completed", "days": days}
+        
+    except Exception as e:
+        logger.error("Failed to cleanup database", LogCategory.API, {'error': str(e)})
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/admin/maintenance/update-statistics")
+async def update_statistics() -> Dict[str, str]:
+    """Update daily statistics manually."""
+    try:
+        job_db.update_daily_statistics()
+        
+        logger.info("Statistics updated manually", LogCategory.API)
+        
+        return {"status": "statistics updated"}
+        
+    except Exception as e:
+        logger.error("Failed to update statistics", LogCategory.API, {'error': str(e)})
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/system/logs")
 async def get_system_logs(limit: int = 100, level: Optional[str] = None) -> List[Dict]:
@@ -729,7 +883,11 @@ async def system_health() -> Dict[str, Any]:
             dism_available = False
         
         # Count active jobs
-        active_builds = len([j for j in job_status.jobs.values() if j['status'] == 'running'])
+        all_jobs = job_status.get_all_jobs()
+        active_builds = len([j for j in all_jobs if j['status'] == 'running'])
+        
+        # Get database stats
+        db_info = job_db.get_database_info()
         
         health_data = {
             "status": "healthy",
@@ -745,9 +903,14 @@ async def system_health() -> Dict[str, Any]:
                 "total_gb": round(memory.total / (1024**3), 2)
             },
             "active_builds": active_builds,
-            "total_jobs": len(job_status.jobs),
+            "total_jobs": len(all_jobs),
             "dism_available": dism_available,
-            "log_buffer_size": len(get_log_buffer().buffer) if get_log_buffer() else 0
+            "log_buffer_size": len(get_log_buffer().buffer) if get_log_buffer() else 0,
+            "database": {
+                "size_mb": db_info.get('database_size_mb', 0),
+                "job_count": db_info.get('job_count', 0),
+                "log_count": db_info.get('log_count', 0)
+            }
         }
         
         logger.info("System health check completed", LogCategory.SYSTEM, health_data)
@@ -784,11 +947,13 @@ async def websocket_endpoint(websocket: WebSocket):
             await asyncio.sleep(30)
             
             # Send heartbeat with system status
+            all_jobs = job_status.get_all_jobs()
             heartbeat = {
                 "type": "heartbeat",
                 "timestamp": datetime.now().isoformat(),
                 "active_connections": len(job_status.active_connections),
-                "active_jobs": len([j for j in job_status.jobs.values() if j['status'] == 'running'])
+                "active_jobs": len([j for j in all_jobs if j['status'] == 'running']),
+                "total_jobs": len(all_jobs)
             }
             
             await websocket.send_text(json.dumps(heartbeat))
@@ -809,10 +974,10 @@ async def websocket_endpoint(websocket: WebSocket):
         if websocket in job_status.active_connections:
             job_status.active_connections.remove(websocket)
 
-# Background job execution with comprehensive logging and job-specific files
+# Background job execution with comprehensive logging and database persistence
 async def execute_build_job_with_logging(job_id: str, device: str, os_id: int, 
-                                       skip_drivers: bool, skip_updates: bool):
-    """Execute build job in background with detailed logging and job-specific log files."""
+                                       skip_drivers: bool, skip_updates: bool, skip_validation: bool):
+    """Execute build job in background with database persistence and detailed logging."""
     
     # Set up job-specific logger context
     job_logger = get_logger("kassia.webui.build")
@@ -823,7 +988,7 @@ async def execute_build_job_with_logging(job_id: str, device: str, os_id: int,
         job_start_time = time.time()
         
         try:
-            # Update job status
+            # Update job status in database
             job_status.update_job(
                 job_id,
                 status="running",
@@ -958,7 +1123,7 @@ async def execute_build_job_with_logging(job_id: str, device: str, os_id: int,
                 job_status.update_job(
                     job_id,
                     results={
-                        **job_status.jobs[job_id]['results'],
+                        **job_status.get_job(job_id).get('results', {}),
                         'driver_integration': driver_result
                     }
                 )
@@ -991,7 +1156,7 @@ async def execute_build_job_with_logging(job_id: str, device: str, os_id: int,
                 job_status.update_job(
                     job_id,
                     results={
-                        **job_status.jobs[job_id]['results'],
+                        **job_status.get_job(job_id).get('results', {}),
                         'update_integration': update_result
                     }
                 )
@@ -1038,6 +1203,15 @@ async def execute_build_job_with_logging(job_id: str, device: str, os_id: int,
             
             job_duration = time.time() - job_start_time
             
+            final_results = {
+                'final_wim_path': str(final_wim),
+                'final_wim_size_mb': final_size_mb,
+                'total_duration_seconds': job_duration,
+                'driver_integration': locals().get('driver_result', {}),
+                'update_integration': locals().get('update_result', {}),
+                'export_name': export_name
+            }
+            
             job_status.update_job(
                 job_id,
                 status="completed",
@@ -1045,12 +1219,7 @@ async def execute_build_job_with_logging(job_id: str, device: str, os_id: int,
                 step_number=9,
                 progress=100,
                 completed_at=datetime.now().isoformat(),
-                results={
-                    **job_status.jobs[job_id]['results'],
-                    'final_wim_path': str(final_wim),
-                    'final_wim_size_mb': final_size_mb,
-                    'total_duration_seconds': job_duration
-                }
+                results=final_results
             )
             
             success_msg = f"Build completed successfully! Final WIM: {final_size_mb:.1f} MB"
@@ -1062,6 +1231,9 @@ async def execute_build_job_with_logging(job_id: str, device: str, os_id: int,
             
             # Finalize job logging
             finalize_job_logging(job_id, "completed")
+            
+            # Update daily statistics
+            job_db.update_daily_statistics()
             
         except Exception as e:
             job_duration = time.time() - job_start_time
@@ -1081,6 +1253,9 @@ async def execute_build_job_with_logging(job_id: str, device: str, os_id: int,
             # Finalize job logging with error
             finalize_job_logging(job_id, "failed", error_msg)
             
+            # Update daily statistics
+            job_db.update_daily_statistics()
+            
             # Re-raise to be handled by job context
             raise
 
@@ -1092,39 +1267,63 @@ async def health_check():
     return {
         "status": "healthy", 
         "timestamp": datetime.now().isoformat(),
-        "version": "2.0.0"
+        "version": "2.0.0",
+        "database": "enabled"
     }
 
 # Startup event
 @app.on_event("startup")
 async def startup_event():
-    """Log WebUI startup."""
+    """Enhanced startup with database initialization."""
     logger.info("Kassia WebUI started successfully", LogCategory.WEBUI, {
         'startup_complete': True,
-        'endpoints_count': len(app.routes)
+        'endpoints_count': len(app.routes),
+        'database_path': str(job_db.db_path),
+        'database_enabled': True
     })
+    
+    # Update daily statistics on startup
+    try:
+        job_db.update_daily_statistics()
+        logger.info("Daily statistics updated on startup", LogCategory.WEBUI)
+    except Exception as e:
+        logger.error("Failed to update statistics on startup", LogCategory.WEBUI, {'error': str(e)})
 
 # Shutdown event
 @app.on_event("shutdown")
 async def shutdown_event():
-    """Log WebUI shutdown."""
+    """Enhanced shutdown with database cleanup."""
+    all_jobs = job_status.get_all_jobs()
+    active_jobs = [j for j in all_jobs if j['status'] == 'running']
+    
+    # Mark any running jobs as interrupted
+    for job in active_jobs:
+        job_status.update_job(job['id'], 
+            status="failed",
+            error="Application shutdown during execution",
+            completed_at=datetime.now().isoformat()
+        )
+    
     logger.info("Kassia WebUI shutting down", LogCategory.WEBUI, {
         'active_connections': len(job_status.active_connections),
-        'active_jobs': len([j for j in job_status.jobs.values() if j['status'] == 'running'])
+        'interrupted_jobs': len(active_jobs),
+        'total_jobs': len(all_jobs)
     })
 
 if __name__ == "__main__":
     import uvicorn
     
-    logger.info("Starting Kassia WebUI server", LogCategory.WEBUI)
+    logger.info("Starting Kassia WebUI server with database", LogCategory.WEBUI)
     
-    print("🌐 Starting Kassia Web Interface with Advanced Logging...")
-    print("=" * 60)
+    print("🌐 Starting Kassia Web Interface with Database Integration...")
+    print("=" * 70)
     print("🚀 FastAPI server starting...")
     print("📊 Dashboard: http://localhost:8000")
     print("📋 API Docs: http://localhost:8000/docs")
     print("📜 Logs: runtime/logs/")
-    print("📁 Job Logs: runtime/logs/job_*.log")
-    print("=" * 60)
+    print("🗄️ Database: runtime/data/kassia_webui_jobs.db")
+    print("📊 Admin Panel: http://localhost:8000 (Admin Tab)")
+    print("🔧 Database Management & Statistics available")
+    print("=" * 70)
     
-    uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run(app, host="0.0.0.0", port=8000, reload=False)  # reload=False für Production

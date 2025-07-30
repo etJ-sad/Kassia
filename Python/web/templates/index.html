@@ -346,6 +346,364 @@
             </div>
         </div>
     </div>
+	
+	<!-- Neuer Admin Tab nach Jobs Tab einfügen -->
+<button class="tab-btn" data-tab="admin" onclick="switchTab('admin')">
+    <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+        <path d="M8 4.754a3.246 3.246 0 1 0 0 6.492 3.246 3.246 0 0 0 0-6.492zM5.754 8a2.246 2.246 0 1 1 4.492 0 2.246 2.246 0 0 1-4.492 0z"/>
+        <path d="M9.796 1.343c-.527-1.79-3.065-1.79-3.592 0l-.094.319a.873.873 0 0 1-1.255.52l-.292-.16c-1.64-.892-3.433.902-2.54 2.541l.159.292a.873.873 0 0 1-.52 1.255l-.319.094c-1.79.527-1.79 3.065 0 3.592l.319.094a.873.873 0 0 1 .52 1.255l-.16.292c-.892 1.64.901 3.434 2.541 2.54l.292-.159a.873.873 0 0 1 1.255.52l.094.319c.527 1.79 3.065 1.79 3.592 0l.094-.319a.873.873 0 0 1 1.255-.52l.292.16c1.64.892 3.434-.902 2.54-2.541l-.159-.292a.873.873 0 0 1 .52-1.255l.319-.094c1.79-.527 1.79-3.065 0-3.592l-.319-.094a.873.873 0 0 1-.52-1.255l.16-.292c.892-1.64-.902-3.433-2.541-2.54l-.292.159a.873.873 0 0 1-1.255-.52l-.094-.319z"/>
+    </svg>
+    <span data-translate="nav_admin">Admin</span>
+</button>
+
+<!-- Admin Tab Content -->
+<div id="admin" class="tab-content">
+    <!-- Database Overview -->
+    <div class="content-card">
+        <div class="card-header">
+            <h2 class="card-title">
+                <svg width="24" height="24" fill="currentColor" viewBox="0 0 16 16" style="margin-right: 12px;">
+                    <path d="M0 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v2h2a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-2H2a2 2 0 0 1-2-2V2z"/>
+                </svg>
+                <span data-translate="admin_database">Database Management</span>
+                <button class="btn btn-secondary" onclick="loadDatabaseInfo()" style="margin-left: auto; padding: 8px 16px; font-size: 14px;">
+                    <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                        <path fill-rule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"/>
+                    </svg>
+                    <span data-translate="refresh">Refresh</span>
+                </button>
+            </h2>
+        </div>
+        <div class="card-content">
+            <div class="status-grid">
+                <div class="status-card">
+                    <span class="status-number" id="dbJobCount">-</span>
+                    <div class="status-label" data-translate="db_jobs_stored">Jobs Stored</div>
+                </div>
+                <div class="status-card">
+                    <span class="status-number" id="dbLogCount">-</span>
+                    <div class="status-label" data-translate="db_logs_stored">Log Entries</div>
+                </div>
+                <div class="status-card">
+                    <span class="status-number" id="dbSize">-</span>
+                    <div class="status-label" data-translate="db_size">Database Size</div>
+                </div>
+                <div class="status-card">
+                    <span class="status-number" id="dbEventCount">-</span>
+                    <div class="status-label" data-translate="db_events">System Events</div>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 32px;">
+                <div class="content-card" style="margin: 0;">
+                    <div class="card-header">
+                        <h3 class="card-title" data-translate="db_maintenance">Database Maintenance</h3>
+                    </div>
+                    <div class="card-content">
+                        <p data-translate="db_maintenance_desc">Clean up old data and optimize database performance.</p>
+                        
+                        <div style="margin: 20px 0;">
+                            <label class="form-label" for="cleanupDays" data-translate="cleanup_days">Days to keep:</label>
+                            <select id="cleanupDays" class="form-control" style="margin-bottom: 16px;">
+                                <option value="30">30 days</option>
+                                <option value="60">60 days</option>
+                                <option value="90" selected>90 days</option>
+                                <option value="180">180 days</option>
+                                <option value="365">1 year</option>
+                            </select>
+                        </div>
+                        
+                        <button class="btn btn-warning" onclick="cleanupDatabase()" id="cleanupBtn">
+                            <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                                <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
+                            </svg>
+                            <span data-translate="cleanup_now">Cleanup Now</span>
+                        </button>
+                        
+                        <button class="btn btn-secondary" onclick="updateStatistics()" style="margin-left: 8px;">
+                            <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                                <path d="M1.5 1a.5.5 0 0 0-.5.5v4a.5.5 0 0 1-1 0v-4A1.5 1.5 0 0 1 1.5 0h4a.5.5 0 0 1 0 1h-4zM11 .5a.5.5 0 0 1 .5-.5h4A1.5 1.5 0 0 1 17 1.5v4a.5.5 0 0 1-1 0v-4a.5.5 0 0 0-.5-.5h-4a.5.5 0 0 1-.5-.5z"/>
+                            </svg>
+                            <span data-translate="update_stats">Update Stats</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="content-card" style="margin: 0;">
+                    <div class="card-header">
+                        <h3 class="card-title" data-translate="db_backup">Database Backup</h3>
+                    </div>
+                    <div class="card-content">
+                        <p data-translate="db_backup_desc">Download a copy of the database for backup purposes.</p>
+                        
+                        <div style="margin: 20px 0;">
+                            <div style="font-size: 14px; color: var(--siemens-text-secondary);">
+                                <strong data-translate="db_location">Database Location:</strong><br>
+                                <code id="dbPath">runtime/data/kassia_jobs.db</code>
+                            </div>
+                        </div>
+                        
+                        <button class="btn btn-secondary" onclick="downloadDatabaseBackup()">
+                            <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                                <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
+                                <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/>
+                            </svg>
+                            <span data-translate="download_backup">Download Backup</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Chart -->
+    <div class="content-card">
+        <div class="card-header">
+            <h2 class="card-title">
+                <svg width="24" height="24" fill="currentColor" viewBox="0 0 16 16" style="margin-right: 12px;">
+                    <path d="M4 11H2v3h2v-3zm5-4H7v7h2V7zm5-5v12h-2V2h2zm-2-1a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h2a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1h-2zM6 7a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V7zM1 11a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1v-3z"/>
+                </svg>
+                <span data-translate="admin_statistics">Job Statistics</span>
+                <div style="margin-left: auto; display: flex; gap: 8px;">
+                    <select id="statsDays" onchange="loadStatistics()" style="padding: 4px 8px; border-radius: 4px; border: 1px solid #ddd;">
+                        <option value="7">7 days</option>
+                        <option value="30" selected>30 days</option>
+                        <option value="90">90 days</option>
+                    </select>
+                    <button class="btn btn-secondary" onclick="loadStatistics()" style="padding: 8px 16px; font-size: 14px;">
+                        <span data-translate="refresh">Refresh</span>
+                    </button>
+                </div>
+            </h2>
+        </div>
+        <div class="card-content">
+            <div id="statisticsChart" style="height: 300px; display: flex; align-items: center; justify-content: center; color: var(--siemens-text-secondary);">
+                <div style="text-align: center;">
+                    <div class="loading-spinner" style="margin-bottom: 16px;"></div>
+                    <span data-translate="loading_statistics">Loading statistics...</span>
+                </div>
+            </div>
+            
+            <div id="statisticsTable" style="margin-top: 24px;">
+                <!-- Statistics table will be loaded here -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Database Management Functions
+async function loadDatabaseInfo() {
+    try {
+        uiManager.showLoading('loadDatabaseInfo', 'Loading database info...');
+        
+        const dbInfo = await api.get('/api/admin/database/info');
+        
+        // Update UI elements
+        document.getElementById('dbJobCount').textContent = dbInfo.job_count || 0;
+        document.getElementById('dbLogCount').textContent = dbInfo.log_count || 0;
+        document.getElementById('dbSize').textContent = uiManager.formatBytes(dbInfo.database_size_bytes || 0);
+        document.getElementById('dbEventCount').textContent = dbInfo.event_count || 0;
+        document.getElementById('dbPath').textContent = dbInfo.database_path || 'Unknown';
+        
+        console.log('✅ Database info loaded:', dbInfo);
+        
+    } catch (error) {
+        console.error('❌ Failed to load database info:', error);
+        uiManager.showToast('Failed to load database information', 'error');
+    } finally {
+        uiManager.hideLoading('loadDatabaseInfo');
+    }
+}
+
+async function cleanupDatabase() {
+    const days = document.getElementById('cleanupDays').value;
+    
+    if (!confirm(`Are you sure you want to delete all data older than ${days} days? This action cannot be undone.`)) {
+        return;
+    }
+    
+    try {
+        uiManager.showLoading('cleanupBtn', 'Cleaning up...');
+        
+        const result = await api.post(`/api/admin/maintenance/cleanup?days=${days}`);
+        
+        uiManager.showToast(`Database cleanup completed for data older than ${days} days`, 'success');
+        
+        // Reload database info
+        await loadDatabaseInfo();
+        
+    } catch (error) {
+        console.error('❌ Failed to cleanup database:', error);
+        uiManager.showToast('Failed to cleanup database', 'error');
+    } finally {
+        uiManager.hideLoading('cleanupBtn');
+    }
+}
+
+async function updateStatistics() {
+    try {
+        const result = await api.post('/api/admin/maintenance/update-statistics');
+        
+        uiManager.showToast('Statistics updated successfully', 'success');
+        
+        // Reload statistics if visible
+        if (uiManager.currentTab === 'admin') {
+            await loadStatistics();
+        }
+        
+    } catch (error) {
+        console.error('❌ Failed to update statistics:', error);
+        uiManager.showToast('Failed to update statistics', 'error');
+    }
+}
+
+async function downloadDatabaseBackup() {
+    try {
+        // Since we can't directly download the SQLite file via API,
+        // we'll show the path for manual backup
+        const dbInfo = await api.get('/api/admin/database/info');
+        
+        const message = `Database backup location:\n${dbInfo.database_path}\n\nSize: ${uiManager.formatBytes(dbInfo.database_size_bytes)}\n\nCopy this file to create a backup.`;
+        
+        alert(message);
+        
+        // In production, you might want to implement a proper download endpoint
+        
+    } catch (error) {
+        console.error('❌ Failed to get database backup info:', error);
+        uiManager.showToast('Failed to get backup information', 'error');
+    }
+}
+
+async function loadStatistics() {
+    const days = document.getElementById('statsDays').value;
+    
+    try {
+        const stats = await api.get(`/api/admin/statistics?days=${days}`);
+        
+        // Simple statistics display (you could use a charting library here)
+        displayStatistics(stats);
+        
+        console.log('✅ Statistics loaded:', stats);
+        
+    } catch (error) {
+        console.error('❌ Failed to load statistics:', error);
+        uiManager.showToast('Failed to load statistics', 'error');
+    }
+}
+
+function displayStatistics(stats) {
+    const chartEl = document.getElementById('statisticsChart');
+    const tableEl = document.getElementById('statisticsTable');
+    
+    if (stats.length === 0) {
+        chartEl.innerHTML = '<p style="text-align: center; color: var(--siemens-text-secondary);">No statistics data available</p>';
+        tableEl.innerHTML = '';
+        return;
+    }
+    
+    // Simple chart visualization (replace with actual charting library)
+    let chartHtml = '<div style="display: flex; align-items: end; gap: 4px; height: 200px; padding: 20px;">';
+    
+    const maxJobs = Math.max(...stats.map(s => s.total_jobs));
+    
+    stats.reverse().forEach((stat, index) => {
+        const height = maxJobs > 0 ? (stat.total_jobs / maxJobs) * 150 : 0;
+        const completedRatio = stat.total_jobs > 0 ? (stat.completed_jobs / stat.total_jobs) * 100 : 0;
+        
+        chartHtml += `
+            <div style="display: flex; flex-direction: column; align-items: center; flex: 1;">
+                <div style="display: flex; flex-direction: column; align-items: center; margin-bottom: 8px;">
+                    <div style="font-size: 12px; font-weight: bold; margin-bottom: 2px;">${stat.total_jobs}</div>
+                    <div style="width: 20px; height: ${height}px; background: ${completedRatio > 80 ? '#28a745' : completedRatio > 50 ? '#ffc107' : '#dc3545'}; border-radius: 2px;"></div>
+                </div>
+                <div style="font-size: 10px; transform: rotate(-45deg); margin-top: 8px;">${stat.date.split('-')[2]}/${stat.date.split('-')[1]}</div>
+            </div>
+        `;
+    });
+    
+    chartHtml += '</div>';
+    chartEl.innerHTML = chartHtml;
+    
+    // Statistics table
+    let tableHtml = `
+        <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+            <thead>
+                <tr style="background: var(--siemens-light-gray);">
+                    <th style="padding: 8px; text-align: left; border: 1px solid #ddd;">Date</th>
+                    <th style="padding: 8px; text-align: center; border: 1px solid #ddd;">Total</th>
+                    <th style="padding: 8px; text-align: center; border: 1px solid #ddd;">Completed</th>
+                    <th style="padding: 8px; text-align: center; border: 1px solid #ddd;">Failed</th>
+                    <th style="padding: 8px; text-align: center; border: 1px solid #ddd;">Success Rate</th>
+                    <th style="padding: 8px; text-align: center; border: 1px solid #ddd;">Avg Duration</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+    
+    stats.reverse().forEach(stat => {
+        const successRate = stat.total_jobs > 0 ? ((stat.completed_jobs / stat.total_jobs) * 100).toFixed(1) : '0.0';
+        const avgDuration = stat.avg_duration_seconds ? uiManager.formatDuration(Math.round(stat.avg_duration_seconds)) : '-';
+        
+        tableHtml += `
+            <tr>
+                <td style="padding: 8px; border: 1px solid #ddd;">${stat.date}</td>
+                <td style="padding: 8px; text-align: center; border: 1px solid #ddd;">${stat.total_jobs}</td>
+                <td style="padding: 8px; text-align: center; border: 1px solid #ddd; color: #28a745;">${stat.completed_jobs}</td>
+                <td style="padding: 8px; text-align: center; border: 1px solid #ddd; color: #dc3545;">${stat.failed_jobs}</td>
+                <td style="padding: 8px; text-align: center; border: 1px solid #ddd; font-weight: bold; color: ${parseFloat(successRate) >= 80 ? '#28a745' : parseFloat(successRate) >= 50 ? '#ffc107' : '#dc3545'};">${successRate}%</td>
+                <td style="padding: 8px; text-align: center; border: 1px solid #ddd;">${avgDuration}</td>
+            </tr>
+        `;
+    });
+    
+    tableHtml += '</tbody></table>';
+    tableEl.innerHTML = tableHtml;
+}
+
+// Enhanced UI Manager with Admin functions
+if (window.uiManager) {
+    const originalRefreshAdmin = window.uiManager.refreshAdmin || function() {};
+    
+    window.uiManager.refreshAdmin = function() {
+        console.log('🔄 Refreshing admin panel');
+        loadDatabaseInfo();
+        loadStatistics();
+    };
+    
+    // Override tab switch to load admin data when needed
+    const originalOnTabSwitch = window.uiManager.onTabSwitch;
+    window.uiManager.onTabSwitch = function(tabName) {
+        originalOnTabSwitch.call(this, tabName);
+        
+        if (tabName === 'admin') {
+            setTimeout(() => {
+                loadDatabaseInfo();
+                loadStatistics();
+            }, 100);
+        }
+    };
+}
+
+// Auto-load database info when admin tab is first opened
+document.addEventListener('DOMContentLoaded', function() {
+    // Add click handler to admin nav
+    const adminNavItems = document.querySelectorAll('.nav-item, .tab-btn');
+    adminNavItems.forEach(item => {
+        if (item.textContent.toLowerCase().includes('admin')) {
+            item.addEventListener('click', () => {
+                setTimeout(() => {
+                    if (document.getElementById('admin').classList.contains('active')) {
+                        loadDatabaseInfo();
+                        loadStatistics();
+                    }
+                }, 200);
+            });
+        }
+    });
+});
+</script>
 
     <!-- JavaScript Files -->
     <script src="/static/js/translations.js"></script>

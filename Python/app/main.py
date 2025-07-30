@@ -1,7 +1,7 @@
-# app/main.py - CLI mit verbessertem Logging
+# app/main.py - CLI mit Datenbank-Integration und verbessertem Logging
 
 """
-Kassia Python - Main CLI Entry Point (Mit Advanced Logging)
+Kassia Python - Main CLI Entry Point (Mit Database Integration und Advanced Logging)
 """
 
 import click
@@ -11,11 +11,16 @@ import asyncio
 from pathlib import Path
 from datetime import datetime
 import time
+import uuid
+from typing import Optional, List
 
 # Import our logging system
 from app.utils.logging import (
-    get_logger, configure_logging, LogLevel, LogCategory
+    get_logger, configure_logging, LogLevel, LogCategory, create_job_logger, finalize_job_logging
 )
+
+# Import database system
+from app.utils.job_database import get_job_database, init_job_database
 
 # Import existing modules
 from app.models.config import ConfigLoader, ValidationResult
@@ -30,8 +35,8 @@ __version__ = "2.0.0"
 # Initialize logger
 logger = get_logger("kassia.cli")
 
-def setup_logging(debug: bool = False, log_file: bool = True):
-    """Setup logging configuration."""
+def setup_logging_and_database(debug: bool = False, log_file: bool = True, db_path: Optional[Path] = None):
+    """Setup logging configuration and initialize database."""
     level = LogLevel.DEBUG if debug else LogLevel.INFO
     
     configure_logging(
@@ -42,11 +47,85 @@ def setup_logging(debug: bool = False, log_file: bool = True):
         enable_webui=False
     )
     
-    logger.info("Logging system initialized", LogCategory.SYSTEM, {
+    # Initialize database
+    if db_path is None:
+        db_path = Path("runtime/data/kassia_cli_jobs.db")
+    
+    job_db = init_job_database(db_path)
+    
+    logger.info("Logging and Database system initialized", LogCategory.SYSTEM, {
         'version': __version__,
         'debug_mode': debug,
-        'log_level': level.name
+        'log_level': level.name,
+        'database_path': str(db_path)
     })
+    
+    return job_db
+
+def create_cli_job(job_db, device: str, os_id: int, **kwargs) -> str:
+    """Create a CLI job entry in database."""
+    job_id = str(uuid.uuid4())
+    
+    job_data = {
+        'id': job_id,
+        'device': device,
+        'os_id': os_id,
+        'status': 'created',
+        'progress': 0,
+        'current_step': 'Initializing',
+        'step_number': 0,
+        'total_steps': 9,
+        'created_at': datetime.now().isoformat(),
+        'started_at': None,
+        'completed_at': None,
+        'error': None,
+        'results': {},
+        'user_id': 'cli_user',
+        'created_by': 'cli',
+        'skip_drivers': kwargs.get('skip_drivers', False),
+        'skip_updates': kwargs.get('skip_updates', False),
+        'skip_validation': kwargs.get('skip_validation', False)
+    }
+    
+    if job_db.create_job(job_data):
+        logger.info("CLI job created in database", LogCategory.CLI, {
+            'job_id': job_id,
+            'device': device,
+            'os_id': os_id
+        })
+        
+        # Create dedicated job logger
+        create_job_logger(job_id)
+        
+        return job_id
+    else:
+        raise Exception("Failed to create job in database")
+
+def update_cli_job(job_db, job_id: str, **kwargs):
+    """Update CLI job in database."""
+    if job_db.update_job(job_id, kwargs):
+        # Log to job-specific file if available
+        if 'status' in kwargs:
+            logger.info("CLI job status updated", LogCategory.CLI, {
+                'job_id': job_id,
+                'new_status': kwargs['status'],
+                'progress': kwargs.get('progress')
+            })
+        
+        # Also add to job logs table
+        if 'current_step' in kwargs:
+            job_db.add_job_log(
+                job_id=job_id,
+                timestamp=datetime.now().isoformat(),
+                level='INFO',
+                message=f"Step: {kwargs['current_step']}",
+                component='cli',
+                category='CLI'
+            )
+    else:
+        logger.warning("Failed to update CLI job in database", LogCategory.CLI, {
+            'job_id': job_id
+        })
 
 def check_prerequisites() -> ValidationResult:
     """Check system prerequisites with detailed logging."""
@@ -266,13 +345,12 @@ async def discover_and_display_assets(kassia_config, device_name: str) -> dict:
     finally:
         logger.clear_context()
 
-async def execute_wim_workflow(kassia_config, assets_summary: dict, 
-                              skip_drivers: bool, skip_updates: bool, debug: bool) -> Optional[Path]:
-    """Execute the complete WIM workflow with detailed logging."""
+async def execute_cli_wim_workflow(job_db, job_id: str, kassia_config, assets_summary: dict, 
+                                  skip_drivers: bool, skip_updates: bool, debug: bool) -> Optional[Path]:
+    """Execute the complete WIM workflow with database persistence."""
     
-    job_id = f"cli_{int(time.time())}"
     logger.set_context(job_id=job_id)
-    logger.log_operation_start("wim_workflow")
+    logger.log_operation_start("cli_wim_workflow")
     workflow_start = time.time()
     
     try:
@@ -280,12 +358,29 @@ async def execute_wim_workflow(kassia_config, assets_summary: dict,
             error_msg = "Cannot execute WIM workflow without SBI"
             click.echo(f"❌ {error_msg}")
             logger.error(error_msg, LogCategory.WIM)
+            
+            # Update job in database
+            update_cli_job(job_db, job_id, 
+                status="failed",
+                error=error_msg,
+                completed_at=datetime.now().isoformat()
+            )
+            
             return None
         
         sbi_asset = assets_summary['sbi']
         build_config = kassia_config.build
         
-        logger.info("Starting WIM workflow", LogCategory.WORKFLOW, {
+        # Update job to running
+        update_cli_job(job_db, job_id,
+            status="running",
+            started_at=datetime.now().isoformat(),
+            current_step="Starting WIM workflow",
+            step_number=1,
+            progress=5
+        )
+        
+        logger.info("Starting CLI WIM workflow", LogCategory.WORKFLOW, {
             'sbi_name': sbi_asset.name,
             'device': kassia_config.device.deviceId,
             'os_id': kassia_config.selectedOsId,
@@ -301,6 +396,12 @@ async def execute_wim_workflow(kassia_config, assets_summary: dict,
         
         # Step 1: Prepare WIM
         click.echo("   Step 2/9: 🔄 WIM Preparation - copying to temporary location...")
+        update_cli_job(job_db, job_id,
+            current_step="Preparing WIM",
+            step_number=2,
+            progress=15
+        )
+        
         logger.info("Starting WIM preparation", LogCategory.WIM)
         step_start = time.time()
         
@@ -316,6 +417,12 @@ async def execute_wim_workflow(kassia_config, assets_summary: dict,
         
         # Step 2: Mount WIM
         click.echo("   Step 3/9: 🔄 WIM Mounting - mounting for modification...")
+        update_cli_job(job_db, job_id,
+            current_step="Mounting WIM",
+            step_number=3,
+            progress=25
+        )
+        
         logger.info("Starting WIM mount", LogCategory.WIM)
         step_start = time.time()
         
@@ -338,12 +445,23 @@ async def execute_wim_workflow(kassia_config, assets_summary: dict,
         else:
             error_msg = "Mount verification failed: No Windows directory"
             logger.error(error_msg, LogCategory.WIM)
+            update_cli_job(job_db, job_id,
+                status="failed",
+                error=error_msg,
+                completed_at=datetime.now().isoformat()
+            )
             raise Exception(error_msg)
         
         # Step 3: Driver Integration
         if not skip_drivers and assets_summary['drivers']:
             driver_count = len(assets_summary['drivers'])
             click.echo(f"   Step 5/9: 🔄 Driver Integration - integrating {driver_count} drivers...")
+            update_cli_job(job_db, job_id,
+                current_step=f"Integrating {driver_count} drivers",
+                step_number=5,
+                progress=50
+            )
+            
             logger.info("Starting driver integration", LogCategory.DRIVER, {
                 'driver_count': driver_count
             })
@@ -391,15 +509,31 @@ async def execute_wim_workflow(kassia_config, assets_summary: dict,
                 
         elif skip_drivers:
             click.echo(f"   Step 5/9: ⏭️ Driver Integration skipped")
+            update_cli_job(job_db, job_id,
+                current_step="Driver integration skipped",
+                step_number=5,
+                progress=50
+            )
             logger.info("Driver integration skipped by user", LogCategory.DRIVER)
         else:
             click.echo(f"   Step 5/9: ⚠️ No drivers found for integration")
+            update_cli_job(job_db, job_id,
+                current_step="No drivers found",
+                step_number=5,
+                progress=50
+            )
             logger.warning("No drivers found for integration", LogCategory.DRIVER)
         
         # Step 4: Update Integration
         if not skip_updates and assets_summary['updates']:
             update_count = len(assets_summary['updates'])
-            click.echo(f"   Step 4/9: 🔄 Update Integration - integrating {update_count} updates...")
+            click.echo(f"   Step 6/9: 🔄 Update Integration - integrating {update_count} updates...")
+            update_cli_job(job_db, job_id,
+                current_step=f"Integrating {update_count} updates",
+                step_number=6,
+                progress=70
+            )
+            
             logger.info("Starting update integration", LogCategory.UPDATE, {
                 'update_count': update_count
             })
@@ -421,7 +555,7 @@ async def execute_wim_workflow(kassia_config, assets_summary: dict,
             
             if integration_result['success']:
                 successful = integration_result['successful_count']
-                click.echo(f"   Step 4/9: ✅ Update Integration completed ({successful}/{update_count} successful)")
+                click.echo(f"   Step 6/9: ✅ Update Integration completed ({successful}/{update_count} successful)")
                 logger.info("Update integration completed", LogCategory.UPDATE, {
                     'duration': step_duration,
                     'successful_count': successful,
@@ -436,7 +570,7 @@ async def execute_wim_workflow(kassia_config, assets_summary: dict,
                     
             else:
                 failed = integration_result['failed_count']
-                click.echo(f"   Step 4/9: ❌ Update Integration failed ({failed}/{update_count} failed)")
+                click.echo(f"   Step 6/9: ❌ Update Integration failed ({failed}/{update_count} failed)")
                 logger.error("Update integration failed", LogCategory.UPDATE, {
                     'duration': step_duration,
                     'failed_count': failed,
@@ -445,14 +579,30 @@ async def execute_wim_workflow(kassia_config, assets_summary: dict,
                 })
                 
         elif skip_updates:
-            click.echo(f"   Step 4/9: ⏭️ Update Integration skipped")
+            click.echo(f"   Step 6/9: ⏭️ Update Integration skipped")
+            update_cli_job(job_db, job_id,
+                current_step="Update integration skipped",
+                step_number=6,
+                progress=70
+            )
             logger.info("Update integration skipped by user", LogCategory.UPDATE)
         else:
-            click.echo(f"   Step 4/9: ⚠️ No updates found for integration")
+            click.echo(f"   Step 6/9: ⚠️ No updates found for integration")
+            update_cli_job(job_db, job_id,
+                current_step="No updates found",
+                step_number=6,
+                progress=70
+            )
             logger.warning("No updates found for integration", LogCategory.UPDATE)
         
         # Step 5: Export WIM
         click.echo("   Step 7/9: 🔄 WIM Export - creating final image...")
+        update_cli_job(job_db, job_id,
+            current_step="Exporting WIM",
+            step_number=7,
+            progress=85
+        )
+        
         logger.info("Starting WIM export", LogCategory.WIM)
         step_start = time.time()
         
@@ -483,6 +633,12 @@ async def execute_wim_workflow(kassia_config, assets_summary: dict,
         
         # Step 6: Cleanup
         click.echo("   Step 8/9: 🔄 Cleanup - removing temporary files...")
+        update_cli_job(job_db, job_id,
+            current_step="Cleanup",
+            step_number=8,
+            progress=95
+        )
+        
         logger.info("Starting cleanup", LogCategory.SYSTEM)
         step_start = time.time()
         
@@ -494,22 +650,53 @@ async def execute_wim_workflow(kassia_config, assets_summary: dict,
             'duration': step_duration
         })
         
+        # Complete job
         workflow_duration = time.time() - workflow_start
-        logger.log_operation_success("wim_workflow", workflow_duration, {
+        
+        final_results = {
+            'final_wim_path': str(final_wim),
+            'final_wim_size_mb': export_size_mb,
+            'total_duration_seconds': workflow_duration,
+            'driver_integration': locals().get('integration_result', {}),
+            'export_name': export_name
+        }
+        
+        update_cli_job(job_db, job_id,
+            status="completed",
+            current_step="Completed",
+            step_number=9,
+            progress=100,
+            completed_at=datetime.now().isoformat(),
+            results=final_results
+        )
+        
+        logger.log_operation_success("cli_wim_workflow", workflow_duration, {
             'final_wim': str(final_wim),
             'final_size_mb': export_size_mb,
             'device': kassia_config.device.deviceId,
             'os_id': kassia_config.selectedOsId
         })
         
+        # Finalize job logging
+        finalize_job_logging(job_id, "completed")
+        
         return final_wim
         
     except DismError as e:
         workflow_duration = time.time() - workflow_start
+        error_msg = f"DISM Error: {str(e)}"
+        
         click.echo(f"   ❌ WIM workflow failed: {e}")
-        logger.log_operation_failure("wim_workflow", f"DISM Error: {str(e)}", workflow_duration, {
+        logger.log_operation_failure("cli_wim_workflow", error_msg, workflow_duration, {
             'error_type': 'DismError'
         })
+        
+        # Update job with error
+        update_cli_job(job_db, job_id,
+            status="failed",
+            error=error_msg,
+            completed_at=datetime.now().isoformat()
+        )
         
         if debug:
             import traceback
@@ -524,18 +711,33 @@ async def execute_wim_workflow(kassia_config, assets_summary: dict,
                 'cleanup_error': str(cleanup_error)
             })
         
+        # Finalize job logging with error
+        finalize_job_logging(job_id, "failed", error_msg)
+        
         return None
         
     except Exception as e:
         workflow_duration = time.time() - workflow_start
+        error_msg = f"Unexpected error: {str(e)}"
+        
         click.echo(f"   ❌ Unexpected error in WIM workflow: {e}")
-        logger.log_operation_failure("wim_workflow", f"Unexpected error: {str(e)}", workflow_duration, {
+        logger.log_operation_failure("cli_wim_workflow", error_msg, workflow_duration, {
             'error_type': type(e).__name__
         })
+        
+        # Update job with error
+        update_cli_job(job_db, job_id,
+            status="failed",
+            error=error_msg,
+            completed_at=datetime.now().isoformat()
+        )
         
         if debug:
             import traceback
             traceback.print_exc()
+        
+        # Finalize job logging with error
+        finalize_job_logging(job_id, "failed", error_msg)
         
         return None
     finally:
@@ -550,20 +752,22 @@ async def execute_wim_workflow(kassia_config, assets_summary: dict,
 @click.option('--skip-updates', is_flag=True, help='Skip update integration')
 @click.option('--no-cleanup', is_flag=True, help='Skip cleanup (for debugging)')
 @click.option('--list-assets', is_flag=True, help='List available assets and exit')
+@click.option('--list-jobs', is_flag=True, help='List previous CLI jobs and exit')
 @click.option('--verbose', '-v', is_flag=True, help='Verbose logging')
 @click.option('--log-file/--no-log-file', default=True, help='Enable/disable file logging')
+@click.option('--db-path', type=click.Path(path_type=Path), help='Custom database path')
 @click.version_option(version=__version__)
 def cli(device: Optional[str], os_id: int, validate: bool, debug: bool, 
         skip_drivers: bool, skip_updates: bool, no_cleanup: bool, list_assets: bool,
-        verbose: bool, log_file: bool):
+        list_jobs: bool, verbose: bool, log_file: bool, db_path: Optional[Path]):
     """
-    🚀 Kassia Windows Image Preparation System - Python Edition with Advanced Logging
+    🚀 Kassia Windows Image Preparation System - Python CLI with Database Integration
     """
     
     start_time = datetime.now()
     
-    # Setup logging first
-    setup_logging(debug=debug or verbose, log_file=log_file)
+    # Setup logging and database
+    job_db = setup_logging_and_database(debug=debug or verbose, log_file=log_file, db_path=db_path)
     
     # Log startup
     logger.info("Kassia CLI started", LogCategory.SYSTEM, {
@@ -576,7 +780,8 @@ def cli(device: Optional[str], os_id: int, validate: bool, debug: bool,
             'debug': debug,
             'skip_drivers': skip_drivers,
             'skip_updates': skip_updates,
-            'verbose': verbose
+            'verbose': verbose,
+            'list_jobs': list_jobs
         }
     })
     
@@ -585,13 +790,56 @@ def cli(device: Optional[str], os_id: int, validate: bool, debug: bool,
 +===============================================================+
 |                    KASSIA v{__version__}                      |
 |              Windows Image Preparation System                |
-|                  Python Edition with Advanced Logging        |
+|                CLI with Database Integration                  |
 |                                                               |
 |  Starting: {start_time.strftime('%Y-%m-%d %H:%M:%S')}                    |
+|  Database: {job_db.db_path}             |
 +===============================================================+
 """)
     
     try:
+        # Handle list-jobs command
+        if list_jobs:
+            click.echo("📋 Previous CLI Jobs:")
+            jobs = job_db.get_all_jobs(limit=20)
+            
+            if not jobs:
+                click.echo("   No previous jobs found.")
+                return
+            
+            for job in jobs:
+                status_emoji = {
+                    'completed': '✅',
+                    'failed': '❌', 
+                    'cancelled': '🚫',
+                    'running': '🔄'
+                }.get(job['status'], '❓')
+                
+                created_date = datetime.fromisoformat(job['created_at']).strftime('%Y-%m-%d %H:%M')
+                duration = "N/A"
+                
+                if job['completed_at']:
+                    start = datetime.fromisoformat(job['created_at'])
+                    end = datetime.fromisoformat(job['completed_at'])
+                    duration = str(end - start).split('.')[0]  # Remove microseconds
+                
+                click.echo(f"   {status_emoji} {job['id'][:8]}... | {job['device']} OS{job['os_id']} | {created_date} | {duration}")
+                
+                if job['error']:
+                    click.echo(f"      Error: {job['error'][:100]}...")
+                
+                if job['results'] and job['results'].get('final_wim_path'):
+                    final_size = job['results'].get('final_wim_size_mb', 0)
+                    click.echo(f"      Result: {job['results']['final_wim_path']} ({final_size:.1f} MB)")
+            
+            click.echo(f"\n📊 Total jobs in database: {len(jobs)}")
+            
+            # Show database info
+            db_info = job_db.get_database_info()
+            click.echo(f"📁 Database size: {db_info.get('database_size_mb', 0):.1f} MB")
+            
+            return
+        
         # Check prerequisites
         click.echo("🔍 Checking prerequisites...")
         prereq_result = check_prerequisites()
@@ -613,7 +861,7 @@ def cli(device: Optional[str], os_id: int, validate: bool, debug: bool,
         else:
             click.echo("✅ Prerequisites check passed")
         
-        # Device selection (keeping existing logic but adding logging)
+        # Device selection
         if not device:
             devices = list_devices()
             if not devices:
@@ -621,8 +869,22 @@ def cli(device: Optional[str], os_id: int, validate: bool, debug: bool,
                 logger.error("No device configurations found", LogCategory.CONFIG)
                 sys.exit(1)
             
-            # Interactive selection logic here...
-            device = devices[0]  # Simplified for this example
+            # Interactive device selection
+            click.echo("\n📱 Available devices:")
+            for i, dev in enumerate(devices, 1):
+                click.echo(f"   {i}. {dev}")
+            
+            while True:
+                try:
+                    choice = click.prompt("Select device number", type=int)
+                    if 1 <= choice <= len(devices):
+                        device = devices[choice - 1]
+                        break
+                    else:
+                        click.echo("Invalid choice. Please try again.")
+                except (ValueError, click.Abort):
+                    click.echo("Invalid input. Please enter a number.")
+            
             logger.info("Device selected interactively", LogCategory.CONFIG, {
                 'device': device,
                 'available_devices': devices
@@ -634,6 +896,17 @@ def cli(device: Optional[str], os_id: int, validate: bool, debug: bool,
         
         click.echo(f"📱 Device: {device}")
         click.echo(f"🖥️  OS ID: {os_id}")
+        
+        # Create job in database
+        if not validate and not list_assets:
+            job_id = create_cli_job(job_db, device, os_id,
+                skip_drivers=skip_drivers,
+                skip_updates=skip_updates,
+                skip_validation=validate
+            )
+            click.echo(f"📝 Job ID: {job_id}")
+        else:
+            job_id = None
         
         # Load and validate configuration
         click.echo("🔧 Loading and validating configuration...")
@@ -655,6 +928,14 @@ def cli(device: Optional[str], os_id: int, validate: bool, debug: bool,
             config_duration = time.time() - config_start
             click.echo(f"❌ Configuration validation failed: {e}")
             logger.log_operation_failure("configuration_loading", str(e), config_duration)
+            
+            if job_id:
+                update_cli_job(job_db, job_id,
+                    status="failed",
+                    error=f"Configuration validation failed: {e}",
+                    completed_at=datetime.now().isoformat()
+                )
+            
             if debug:
                 import traceback
                 traceback.print_exc()
@@ -669,7 +950,7 @@ def cli(device: Optional[str], os_id: int, validate: bool, debug: bool,
         # Asset Discovery
         assets_summary = asyncio.run(discover_and_display_assets(kassia_config, device))
         
-        # Display configuration summary (add logging here too)
+        # Display configuration summary
         display_configuration_summary(kassia_config, assets_summary)
         
         # Validation-only mode
@@ -700,9 +981,18 @@ Total Assets: {total_assets}
 """)
             return
         
+        # List assets mode
+        if list_assets:
+            click.echo("\n📂 Asset Summary:")
+            click.echo(f"   SBI: {'✅' if assets_summary['sbi'] else '❌'}")
+            click.echo(f"   Drivers: {len(assets_summary['drivers'])}")
+            click.echo(f"   Updates: {len(assets_summary['updates'])}")
+            click.echo(f"   Yunona Scripts: {len(assets_summary['yunona_scripts'])}")
+            return
+        
         # Execute WIM Workflow
-        final_wim = asyncio.run(execute_wim_workflow(
-            kassia_config, assets_summary, skip_drivers, skip_updates, debug
+        final_wim = asyncio.run(execute_cli_wim_workflow(
+            job_db, job_id, kassia_config, assets_summary, skip_drivers, skip_updates, debug
         ))
         
         # Final summary
@@ -715,7 +1005,8 @@ Total Assets: {total_assets}
                 'final_wim': str(final_wim),
                 'final_size_mb': final_size,
                 'device': kassia_config.device.deviceId,
-                'os_id': kassia_config.selectedOsId
+                'os_id': kassia_config.selectedOsId,
+                'job_id': job_id
             })
             
             click.echo(f"""
@@ -724,17 +1015,20 @@ Total Assets: {total_assets}
 Duration: {duration}
 Device: {kassia_config.device.deviceId}
 OS ID: {kassia_config.selectedOsId}
+Job ID: {job_id}
 Final WIM: {final_wim}
 Final Size: {final_size:.1f} MB
 ============================================================
 
 🎉 Success! Your customized Windows image is ready for deployment!
+💾 Job details saved to database: {job_db.db_path}
 """)
         else:
             logger.error("Kassia CLI completed with failure", LogCategory.SYSTEM, {
                 'total_duration': str(duration),
                 'device': kassia_config.device.deviceId,
-                'os_id': kassia_config.selectedOsId
+                'os_id': kassia_config.selectedOsId,
+                'job_id': job_id
             })
             
             click.echo(f"""
@@ -743,17 +1037,26 @@ Final Size: {final_size:.1f} MB
 Duration: {duration}
 Device: {kassia_config.device.deviceId}
 OS ID: {kassia_config.selectedOsId}
+Job ID: {job_id}
 ============================================================
 
 💡 Check error messages above for details.
 💡 Check logs in runtime/logs/ for detailed information.
 💡 Run with --debug for more information.
+💾 Job details saved to database: {job_db.db_path}
 """)
             sys.exit(1)
         
     except KeyboardInterrupt:
         click.echo("\n\n❌ Operation cancelled by user")
         logger.warning("Operation cancelled by user", LogCategory.SYSTEM)
+        
+        # Update job if exists
+        if 'job_id' in locals() and job_id:
+            update_cli_job(job_db, job_id,
+                status="cancelled",
+                completed_at=datetime.now().isoformat()
+            )
         
         # Emergency cleanup
         try:
@@ -773,6 +1076,14 @@ OS ID: {kassia_config.selectedOsId}
             'error': str(e),
             'error_type': type(e).__name__
         })
+        
+        # Update job if exists
+        if 'job_id' in locals() and job_id:
+            update_cli_job(job_db, job_id,
+                status="failed",
+                error=str(e),
+                completed_at=datetime.now().isoformat()
+            )
         
         click.echo(f"""
 ============================================================
@@ -822,7 +1133,8 @@ def initialize_directories(build_config) -> None:
         build_config.tempPath,
         build_config.mountPoint,
         build_config.exportPath,
-        "runtime/logs"
+        "runtime/logs",
+        "runtime/data"
     ]
     
     created_dirs = []
