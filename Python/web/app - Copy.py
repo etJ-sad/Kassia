@@ -1,13 +1,13 @@
-# web/app.py - Fixed Job System Integration with Working Translation System
+# web/app.py - Fixed Job System Integration
 
 """
-Kassia Web Interface - FastAPI Backend mit korrigiertem Job-System und funktionierendem Übersetzungssystem
+Kassia Web Interface - FastAPI Backend mit korrigiertem Job-System
 """
 
 from fastapi import FastAPI, HTTPException, BackgroundTasks, WebSocket, WebSocketDisconnect
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from fastapi.responses import HTMLResponse, FileResponse, JSONResponse
+from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.requests import Request
 from pydantic import BaseModel
 from typing import List, Dict, Optional, Any
@@ -38,6 +38,7 @@ from app.core.wim_handler import WimHandler, WimWorkflow, DismError
 from app.core.driver_integration import DriverIntegrator, DriverIntegrationManager
 from app.core.update_integration import UpdateIntegrator, UpdateIntegrationManager
 
+
 # Configure logging for WebUI
 configure_logging(
     level=LogLevel.INFO,
@@ -67,17 +68,23 @@ app = FastAPI(
     version="2.0.0"
 )
 
-# =================== TRANSLATION ROUTES FIRST (CRITICAL ORDER) ===================
+# Static files and templates
+app.mount("/static", StaticFiles(directory="web/static"), name="static")
+templates = Jinja2Templates(directory="web/templates")
+
+# =================== TRANSLATION SYSTEM SETUP (FIXED) ===================
 
 # Check translation directory
 translations_path = Path("web/translations")
 if translations_path.exists():
+    # Log available translation files
     available_translations = [f.stem for f in translations_path.glob("*.json")]
     logger.info("Translation system configured", LogCategory.WEBUI, {
         'translations_path': str(translations_path),
         'available_languages': available_translations,
         'translation_files': [str(f) for f in translations_path.glob("*.json")]
     })
+    
     print(f"🌍 Translation system: {len(available_translations)} languages available")
     print(f"   Languages: {', '.join(available_translations)}")
 else:
@@ -87,37 +94,29 @@ else:
     })
     print(f"❌ Translation directory not found: {translations_path}")
 
-# CRITICAL: Translation routes MUST be defined BEFORE static file mount
+# =================== TRANSLATION API ROUTES (FIXED) ===================
+
+# DIRECT FILE SERVING - This fixes the 404 issue
 @app.get("/static/translations/{language}.json")
 async def serve_translation_file(language: str):
-    """Directly serve translation files - MUST be before static mount."""
+    """Directly serve translation files to fix 404 issues."""
     try:
-        print(f"🔍 Translation file requested: {language}")
-        
         # Validate language parameter
         if not language.isalpha() or len(language) > 5:
-            print(f"❌ Invalid language code: {language}")
             raise HTTPException(status_code=400, detail="Invalid language code")
         
         translation_file = Path("web/translations") / f"{language}.json"
-        print(f"🔍 Looking for file: {translation_file}")
-        print(f"🔍 File exists: {translation_file.exists()}")
-        print(f"🔍 Current working dir: {Path.cwd()}")
         
         if not translation_file.exists():
             logger.warning("Translation file not found", LogCategory.API, {
                 'language': language,
-                'requested_file': str(translation_file),
-                'absolute_path': str(translation_file.absolute())
+                'requested_file': str(translation_file)
             })
-            print(f"❌ File not found: {translation_file.absolute()}")
             raise HTTPException(status_code=404, detail=f"Translation file for {language} not found")
         
         # Read and return the file content
         with open(translation_file, 'r', encoding='utf-8') as f:
             translations = json.load(f)
-        
-        print(f"✅ Translation file served: {language} ({len(translations)} keys)")
         
         logger.debug("Translation file served directly", LogCategory.API, {
             'language': language,
@@ -125,23 +124,17 @@ async def serve_translation_file(language: str):
             'file_size': translation_file.stat().st_size
         })
         
-        # Return with proper headers for JSON
-        return JSONResponse(content=translations, headers={
-            "Content-Type": "application/json; charset=utf-8",
-            "Cache-Control": "public, max-age=300"  # Cache for 5 minutes
-        })
+        return translations
         
     except HTTPException:
         raise
     except json.JSONDecodeError as e:
-        print(f"❌ JSON decode error for {language}: {e}")
         logger.error("Invalid JSON in translation file", LogCategory.API, {
             'language': language,
             'error': str(e)
         })
         raise HTTPException(status_code=500, detail=f"Invalid JSON in translation file for {language}")
     except Exception as e:
-        print(f"❌ Error serving translation file {language}: {e}")
         logger.error("Failed to serve translation file", LogCategory.API, {
             'language': language,
             'error': str(e)
@@ -156,7 +149,7 @@ async def get_translation_api(language: str):
         translation_file = Path("web/translations") / f"{language}.json"
         
         if not translation_file.exists():
-            logger.warning("Translation file not found via API", LogCategory.API, {
+            logger.warning("Translation file not found", LogCategory.API, {
                 'language': language,
                 'requested_file': str(translation_file)
             })
@@ -174,19 +167,19 @@ async def get_translation_api(language: str):
         return translations
         
     except json.JSONDecodeError as e:
-        logger.error("Invalid JSON in translation file via API", LogCategory.API, {
+        logger.error("Invalid JSON in translation file", LogCategory.API, {
             'language': language,
             'error': str(e)
         })
         return {}  # Return empty instead of error
     except Exception as e:
-        logger.error("Failed to load translation file via API", LogCategory.API, {
+        logger.error("Failed to load translation file", LogCategory.API, {
             'language': language,
             'error': str(e)
         })
         return {}  # Return empty instead of error
 
-# List available languages
+# Add route to list available languages
 @app.get("/api/languages")
 async def list_available_languages():
     """List available translation languages."""
@@ -249,7 +242,7 @@ async def list_available_languages():
             "error": str(e)
         }
 
-# Debug endpoints for translation system
+# Debug endpoint for translation system
 @app.get("/api/debug/translations")
 async def debug_translations():
     """Debug endpoint to check translation system status."""
@@ -303,45 +296,7 @@ async def debug_translations():
         logger.error("Failed to get translation debug info", LogCategory.API, {'error': str(e)})
         return {"error": str(e)}
 
-@app.get("/api/debug/file-structure")
-async def debug_file_structure():
-    """Debug file structure and paths."""
-    import os
-    
-    cwd = Path.cwd()
-    debug_info = {
-        "current_working_directory": str(cwd),
-        "app_file_location": str(Path(__file__).parent),
-        "translation_directory_tests": {}
-    }
-    
-    # Test different path approaches
-    test_paths = [
-        ("web/translations", Path("web/translations")),
-        ("./web/translations", Path("./web/translations")),
-        ("absolute_cwd", cwd / "web" / "translations"),
-        ("relative_to_app", Path(__file__).parent / "translations"),
-        ("relative_to_app_parent", Path(__file__).parent.parent / "web" / "translations")
-    ]
-    
-    for name, path in test_paths:
-        debug_info["translation_directory_tests"][name] = {
-            "path": str(path),
-            "absolute": str(path.absolute()),
-            "exists": path.exists(),
-            "is_dir": path.is_dir() if path.exists() else False
-        }
-        
-        if path.exists() and path.is_dir():
-            try:
-                files = [f.name for f in path.glob("*.json")]
-                debug_info["translation_directory_tests"][name]["json_files"] = files
-                debug_info["translation_directory_tests"][name]["file_count"] = len(files)
-            except Exception as e:
-                debug_info["translation_directory_tests"][name]["error"] = str(e)
-    
-    return debug_info
-
+# Test endpoint for translation loading
 @app.get("/api/test/translation/{language}/{key}")
 async def test_translation(language: str, key: str):
     """Test endpoint to check if a specific translation key works."""
@@ -379,13 +334,7 @@ async def test_translation(language: str, key: str):
             "error": str(e)
         }
 
-# =================== STATIC FILES AND TEMPLATES (AFTER TRANSLATION ROUTES) ===================
-
-# Static files mount - AFTER translation routes to avoid conflicts
-app.mount("/static", StaticFiles(directory="web/static"), name="static")
-templates = Jinja2Templates(directory="web/templates")
-
-# =================== REST OF YOUR APPLICATION ===================
+# =================== END TRANSLATION SYSTEM ===================
 
 # Log startup
 logger.info("Kassia WebUI starting", LogCategory.WEBUI, {
@@ -660,6 +609,7 @@ def get_template_path(request: Request, template_name: str = "index.html") -> tu
         return lang_template, lang
     else:
         return "index.html", lang  # Fallback to default
+
 
 def load_translations(lang: str) -> Dict[str, str]:
     """Load translation dictionary for the given language."""
@@ -1540,6 +1490,9 @@ async def execute_build_job_with_logging(job_id: str, device: str, os_id: int,
             # Force WebSocket broadcast
             await job_status.broadcast_job_update(job_id)
             await asyncio.sleep(0.5)  
+
+            #job_status.update_job(job_id, current_step="Cleanup", progress=95)
+            #await workflow.cleanup_workflow(keep_export=True)
 
             # Final 100% update
             job_status.update_job(job_id, progress=100, current_step="Completed")
