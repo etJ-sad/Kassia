@@ -80,5 +80,6 @@
   "error_loading_jobs": "Failed to load jobs",
   "validation_device_required": "Device selection is required",
   "validation_os_required": "Operating system selection is required",
-  "confirm_cancel_job": "Are you sure you want to cancel this job?"
+  "confirm_cancel_job": "Are you sure you want to cancel this job?",
+  "nav_docs": "Docs"
 }

@@ -385,6 +385,11 @@ async def test_translation(language: str, key: str):
 app.mount("/static", StaticFiles(directory="web/static"), name="static")
 templates = Jinja2Templates(directory="web/templates")
 
+# Serve project documentation if available
+docs_dir = Path(__file__).parent.parent / "docs"
+if docs_dir.exists():
+    app.mount("/documentation", StaticFiles(directory=str(docs_dir), html=True), name="documentation")
+
 # =================== REST OF YOUR APPLICATION ===================
 
 # Log startup
