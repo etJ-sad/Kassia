@@ -1214,13 +1214,24 @@ async def execute_build_job_with_logging(job_id: str, device: str, os_id: int,
             
             job_status.update_job(
                 job_id,
-                status="completed",
+                status="completed", 
                 current_step="Completed",
                 step_number=9,
-                progress=100,
+                progress=100, 
                 completed_at=datetime.now().isoformat(),
                 results=final_results
             )
+
+            # Force WebSocket broadcast
+            await job_status.broadcast_job_update(job_id)
+            await asyncio.sleep(0.5)  
+
+            #job_status.update_job(job_id, current_step="Cleanup", progress=95)
+            #await workflow.cleanup_workflow(keep_export=True)
+
+            # Final 100% update
+            job_status.update_job(job_id, progress=100, current_step="Completed")
+            await job_status.broadcast_job_update(job_id)
             
             success_msg = f"Build completed successfully! Final WIM: {final_size_mb:.1f} MB"
             job_status.add_job_log(job_id, success_msg, "INFO")
