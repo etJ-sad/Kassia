@@ -80,5 +80,6 @@
   "error_loading_jobs": "Nepodařilo se načíst úlohy",
   "validation_device_required": "Je nutné vybrat zařízení",
   "validation_os_required": "Je nutné vybrat operační systém",
-  "confirm_cancel_job": "Opravdu chcete tuto úlohu zrušit?"
+  "confirm_cancel_job": "Opravdu chcete tuto úlohu zrušit?",
+  "nav_docs": "Dokumentace"
 }

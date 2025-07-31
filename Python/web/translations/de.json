@@ -80,5 +80,6 @@
   "error_loading_jobs": "Aufträge konnten nicht geladen werden",
   "validation_device_required": "Geräteauswahl erforderlich",
   "validation_os_required": "Betriebssystemauswahl erforderlich",
-  "confirm_cancel_job": "Möchtest du diesen Auftrag wirklich abbrechen?"
+  "confirm_cancel_job": "Möchtest du diesen Auftrag wirklich abbrechen?",
+  "nav_docs": "Dokumentation"
 }
