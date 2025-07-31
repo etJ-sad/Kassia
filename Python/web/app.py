@@ -1,7 +1,7 @@
-# web/app.py - Vollständige WebUI mit Datenbank Integration
+# web/app.py - Fixed Job System Integration
 
 """
-Kassia Web Interface - FastAPI Backend mit Advanced Logging und Database Integration
+Kassia Web Interface - FastAPI Backend mit korrigiertem Job-System
 """
 
 from fastapi import FastAPI, HTTPException, BackgroundTasks, WebSocket, WebSocketDisconnect
@@ -1044,7 +1044,7 @@ async def execute_build_job_with_logging(job_id: str, device: str, os_id: int,
             })
             
             if not sbi_asset:
-                error_msg = "No SBI found for OS ID"
+                error_msg = f"No SBI found for OS ID {os_id}"
                 job_status.update_job(
                     job_id,
                     status="failed",
