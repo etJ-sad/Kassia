@@ -1,5 +1,5 @@
-// web/static/js/websocket.js
-// Kassia WebUI - WebSocket Manager
+// web/static/js/websocket.js - FIXED VERSION
+// Kassia WebUI - WebSocket Manager (FIXED for Job Updates)
 
 class WebSocketManager {
     constructor() {
@@ -11,6 +11,7 @@ class WebSocketManager {
         this.maxReconnectDelay = 30000; // Max 30 seconds
         this.heartbeatInterval = null;
         this.messageHandlers = new Map();
+        this.lastHeartbeat = null;
         
         console.log('🔌 WebSocket Manager initialized');
     }
@@ -39,23 +40,30 @@ class WebSocketManager {
         this.isConnected = true;
         this.reconnectAttempts = 0;
         this.reconnectDelay = 3000; // Reset delay
+        this.lastHeartbeat = Date.now();
         
         this.updateConnectionStatus(true);
         this.startHeartbeat();
         
         // Notify handlers
         this.notifyHandlers('connection', { connected: true });
+        
+        // Request immediate job update after connection
+        this.requestJobUpdates();
     }
     
     handleMessage(event) {
         try {
             const data = JSON.parse(event.data);
-            console.log('📨 WebSocket message received:', data.type);
+            console.log('📨 WebSocket message received:', data.type, data);
+            
+            // Update last heartbeat time
+            this.lastHeartbeat = Date.now();
             
             // Handle different message types
             switch (data.type) {
                 case 'job_update':
-                    this.notifyHandlers('job_update', data);
+                    this.handleJobUpdate(data);
                     break;
                 case 'heartbeat':
                     this.handleHeartbeat(data);
@@ -73,9 +81,33 @@ class WebSocketManager {
         }
     }
     
+    handleJobUpdate(data) {
+        console.log('🔄 Processing job update:', data.job_id, data.data?.status, data.data?.progress);
+        
+        // Ensure we have proper job data structure
+        if (!data.data) {
+            console.error('❌ Invalid job update - missing data:', data);
+            return;
+        }
+        
+        // Notify job update handlers
+        this.notifyHandlers('job_update', data);
+        
+        // Force UI refresh for completed/failed jobs
+        if (data.data.status === 'completed' || data.data.status === 'failed') {
+            console.log('🏁 Job finished, forcing UI refresh');
+            setTimeout(() => {
+                if (window.kassiaApp && window.kassiaApp.loadJobs) {
+                    window.kassiaApp.loadJobs();
+                }
+            }, 1000); // Small delay to ensure backend is updated
+        }
+    }
+    
     handleClose(event) {
         console.log('🔌 WebSocket disconnected:', event.code, event.reason);
         this.isConnected = false;
+        this.lastHeartbeat = null;
         
         this.updateConnectionStatus(false);
         this.stopHeartbeat();
@@ -92,6 +124,7 @@ class WebSocketManager {
     handleError(error) {
         console.error('❌ WebSocket error:', error);
         this.isConnected = false;
+        this.lastHeartbeat = null;
         this.updateConnectionStatus(false);
         
         // Notify handlers
@@ -100,12 +133,37 @@ class WebSocketManager {
     
     handleHeartbeat(data) {
         // Update connection info with heartbeat data
+        this.lastHeartbeat = Date.now();
+        
         if (data.active_connections !== undefined) {
             console.log(`💓 Heartbeat: ${data.active_connections} connections, ${data.active_jobs || 0} active jobs`);
         }
         
         // Notify handlers
         this.notifyHandlers('heartbeat', data);
+        
+        // Check if we need to refresh jobs based on heartbeat data
+        if (data.active_jobs !== undefined && window.kassiaApp) {
+            const currentRunningJobs = window.kassiaApp.jobs ? 
+                window.kassiaApp.jobs.filter(j => j.status === 'running').length : 0;
+            
+            if (data.active_jobs !== currentRunningJobs) {
+                console.log('🔄 Job count mismatch detected, refreshing jobs');
+                if (window.kassiaApp.loadJobs) {
+                    window.kassiaApp.loadJobs();
+                }
+            }
+        }
+    }
+    
+    requestJobUpdates() {
+        // Send a message to request current job status
+        if (this.isConnected) {
+            this.send({
+                type: 'request_job_updates',
+                timestamp: new Date().toISOString()
+            });
+        }
     }
     
     scheduleReconnect() {
@@ -128,11 +186,28 @@ class WebSocketManager {
     }
     
     startHeartbeat() {
-        // The server sends heartbeats, we just need to respond or monitor them
+        // Monitor connection health and request updates
         this.heartbeatInterval = setInterval(() => {
             if (this.isConnected && this.ws) {
-                // We could send a ping here if needed
-                // this.send({ type: 'ping', timestamp: new Date().toISOString() });
+                // Check if we've received a heartbeat recently
+                const now = Date.now();
+                const timeSinceLastHeartbeat = now - (this.lastHeartbeat || now);
+                
+                if (timeSinceLastHeartbeat > 60000) { // 1 minute without heartbeat
+                    console.warn('⚠️ No heartbeat for 1 minute, connection may be stale');
+                    // Force reconnection
+                    this.ws.close();
+                    return;
+                }
+                
+                // Send ping to keep connection alive
+                this.send({ 
+                    type: 'ping', 
+                    timestamp: new Date().toISOString() 
+                });
+                
+                // Request job updates periodically
+                this.requestJobUpdates();
             }
         }, 30000); // Every 30 seconds
     }
@@ -145,7 +220,7 @@ class WebSocketManager {
     }
     
     send(data) {
-        if (this.isConnected && this.ws) {
+        if (this.isConnected && this.ws && this.ws.readyState === WebSocket.OPEN) {
             try {
                 const message = typeof data === 'string' ? data : JSON.stringify(data);
                 this.ws.send(message);
@@ -232,7 +307,8 @@ class WebSocketManager {
             reconnectAttempts: this.reconnectAttempts,
             maxReconnectAttempts: this.maxReconnectAttempts,
             readyState: this.ws ? this.ws.readyState : null,
-            url: this.ws ? this.ws.url : null
+            url: this.ws ? this.ws.url : null,
+            lastHeartbeat: this.lastHeartbeat
         };
     }
 }
@@ -257,6 +333,9 @@ document.addEventListener('visibilitychange', () => {
         console.log('📱 Page visible - checking WebSocket connection');
         if (!window.wsManager.isConnected) {
             window.wsManager.connect();
+        } else {
+            // Request job updates when page becomes visible
+            window.wsManager.requestJobUpdates();
         }
     }
 });

@@ -1,5 +1,5 @@
 // web/static/js/kassia-app.js
-// Kassia WebUI - Main Application Controller
+// Kassia WebUI - Main Application Controller (FIXED)
 
 class KassiaApp {
     constructor() {
@@ -47,22 +47,40 @@ class KassiaApp {
         }
     }
     
-    setupWebSocketHandlers() {
-        // Job update handler
-        wsManager.addMessageHandler('job_update', (data) => {
-            this.handleJobUpdate(data);
-        });
-        
-        // Connection status handler
-        wsManager.addMessageHandler('connection', (data) => {
-            console.log('🔌 WebSocket connection status:', data.connected);
-        });
-        
-        // Heartbeat handler
-        wsManager.addMessageHandler('heartbeat', (data) => {
-            console.log('💓 Heartbeat received:', data);
-        });
-    }
+	setupWebSocketHandlers() {
+		// Job update handler with enhanced logging
+		wsManager.addMessageHandler('job_update', (data) => {
+			console.log('🔌 WebSocket job update received:', data);
+			this.handleJobUpdate(data);
+		});
+		
+		// Connection status handler
+		wsManager.addMessageHandler('connection', (data) => {
+			console.log('🔌 WebSocket connection status:', data.connected);
+			
+			if (data.connected) {
+				// When reconnected, force refresh jobs to sync state
+				console.log('🔄 WebSocket reconnected, syncing job state...');
+				setTimeout(() => {
+					this.loadJobs();
+				}, 1000);
+			}
+		});
+		
+		// Heartbeat handler with job sync check
+		wsManager.addMessageHandler('heartbeat', (data) => {
+			console.log('💓 Heartbeat received:', data);
+			
+			// If heartbeat indicates different job count than we have, refresh
+			if (data.active_jobs !== undefined) {
+				const ourRunningCount = this.jobs.filter(j => j.status === 'running').length;
+				if (data.active_jobs !== ourRunningCount) {
+					console.log(`🔄 Job count mismatch: server=${data.active_jobs}, client=${ourRunningCount}, refreshing...`);
+					this.loadJobs();
+				}
+			}
+		});
+	}
     
     setupFormHandlers() {
         // Build form submission
@@ -79,6 +97,14 @@ class KassiaApp {
         if (deviceSelect) {
             deviceSelect.addEventListener('change', () => {
                 this.handleDeviceChange();
+            });
+        }
+        
+        // OS selection change
+        const osSelect = document.getElementById('osSelect');
+        if (osSelect) {
+            osSelect.addEventListener('change', () => {
+                this.updateBuildPreview();
             });
         }
         
@@ -223,7 +249,12 @@ class KassiaApp {
         // Populate OS options
         const osMap = {
             10: 'Windows 10 IoT Enterprise LTSC 2021',
-            21656: 'Windows 11 IoT Enterprise LTSC 2024'
+            21656: 'Windows 11 IoT Enterprise LTSC 2024',
+            21651: 'Windows 10 IoT Enterprise LTSB 2016',
+            21652: 'Windows 10 IoT Enterprise LTSC 2019',
+            21653: 'Windows 11 IoT Enterprise 22H2',
+            21654: 'Windows 11 IoT Enterprise 23H2',
+            21655: 'Windows 11 IoT Enterprise 24H2'
         };
         
         selectedDevice.supported_os.forEach(osId => {
@@ -235,10 +266,8 @@ class KassiaApp {
         
         osSelect.disabled = false;
         
-        // Add change handler for OS select
-        osSelect.addEventListener('change', () => {
-            this.updateBuildPreview();
-        });
+        // Clear any existing preview
+        this.hideBuildPreview();
     }
     
     async updateBuildPreview() {
@@ -254,7 +283,10 @@ class KassiaApp {
         }
         
         try {
-            uiManager.showLoading('startBuildBtn', window.t('loading_assets', 'Loading assets...'));
+            const startBuildBtn = document.getElementById('startBuildBtn');
+            if (startBuildBtn) {
+                uiManager.showLoading('startBuildBtn', window.t('loading_assets', 'Loading assets...'));
+            }
             
             // Load assets for preview
             const assets = await api.getAssets(deviceId, parseInt(osId));
@@ -269,7 +301,10 @@ class KassiaApp {
                 'error'
             );
         } finally {
-            uiManager.hideLoading('startBuildBtn');
+            const startBuildBtn = document.getElementById('startBuildBtn');
+            if (startBuildBtn) {
+                uiManager.hideLoading('startBuildBtn');
+            }
         }
     }
     
@@ -278,12 +313,21 @@ class KassiaApp {
         if (!previewEl) return;
         
         // Update preview content
-        document.getElementById('previewDevice').textContent = deviceId;
-        document.getElementById('previewOS').textContent = osId;
-        document.getElementById('previewWimPath').textContent = assets.wim_path || 'Not configured';
-        document.getElementById('previewSBI').textContent = assets.sbi ? '✅ Available' : '❌ Missing';
-        document.getElementById('previewDrivers').textContent = `${assets.drivers?.length || 0} found`;
-        document.getElementById('previewUpdates').textContent = `${assets.updates?.length || 0} found`;
+        const elements = {
+            previewDevice: document.getElementById('previewDevice'),
+            previewOS: document.getElementById('previewOS'),
+            previewWimPath: document.getElementById('previewWimPath'),
+            previewSBI: document.getElementById('previewSBI'),
+            previewDrivers: document.getElementById('previewDrivers'),
+            previewUpdates: document.getElementById('previewUpdates')
+        };
+        
+        if (elements.previewDevice) elements.previewDevice.textContent = deviceId;
+        if (elements.previewOS) elements.previewOS.textContent = osId;
+        if (elements.previewWimPath) elements.previewWimPath.textContent = assets.wim_path || 'Not configured';
+        if (elements.previewSBI) elements.previewSBI.textContent = assets.sbi ? '✅ Available' : '❌ Missing';
+        if (elements.previewDrivers) elements.previewDrivers.textContent = `${assets.drivers?.length || 0} found`;
+        if (elements.previewUpdates) elements.previewUpdates.textContent = `${assets.updates?.length || 0} found`;
         
         previewEl.style.display = 'block';
     }
@@ -296,32 +340,45 @@ class KassiaApp {
     }
     
     async handleBuildSubmit() {
-        const formData = uiManager.getFormData('buildForm');
+        console.log('🚀 Build form submitted');
         
-        // Validate form
-        const validation = uiManager.validateForm('buildForm', {
-            deviceSelect: { required: true },
-            osSelect: { required: true }
-        });
+        const deviceSelect = document.getElementById('deviceSelect');
+        const osSelect = document.getElementById('osSelect');
+        const skipDrivers = document.getElementById('skipDrivers');
+        const skipUpdates = document.getElementById('skipUpdates');
         
-        if (!validation.valid) {
-            validation.errors.forEach(error => {
+        // Manual validation instead of using the problematic validateForm method
+        const errors = [];
+        
+        if (!deviceSelect || !deviceSelect.value) {
+            errors.push(window.t('validation_device_required', 'Device selection is required'));
+        }
+        
+        if (!osSelect || !osSelect.value) {
+            errors.push(window.t('validation_os_required', 'Operating system selection is required'));
+        }
+        
+        if (errors.length > 0) {
+            errors.forEach(error => {
                 uiManager.showToast(error, 'error');
             });
             return;
         }
         
         const buildRequest = {
-            device: document.getElementById('deviceSelect').value,
-            os_id: parseInt(document.getElementById('osSelect').value),
-            skip_drivers: document.getElementById('skipDrivers').checked,
-            skip_updates: document.getElementById('skipUpdates').checked
+            device: deviceSelect.value,
+            os_id: parseInt(osSelect.value),
+            skip_drivers: skipDrivers ? skipDrivers.checked : false,
+            skip_updates: skipUpdates ? skipUpdates.checked : false
         };
+        
+        console.log('📋 Build request:', buildRequest);
         
         try {
             uiManager.showLoading('startBuildBtn', window.t('starting_build', 'Starting build...'));
             
             const response = await api.startBuild(buildRequest);
+            console.log('✅ Build started:', response);
             
             uiManager.showToast(
                 window.t('build_started', 'Build started successfully!'), 
@@ -329,7 +386,14 @@ class KassiaApp {
             );
             
             // Reset form
-            uiManager.resetForm('buildForm');
+            if (deviceSelect) deviceSelect.value = '';
+            if (osSelect) {
+                osSelect.innerHTML = '<option value="">' + window.t('select_os', 'Select OS...') + '</option>';
+                osSelect.disabled = true;
+            }
+            if (skipDrivers) skipDrivers.checked = false;
+            if (skipUpdates) skipUpdates.checked = false;
+            
             this.hideBuildPreview();
             
             // Switch to jobs tab
@@ -341,7 +405,7 @@ class KassiaApp {
         } catch (error) {
             console.error('❌ Failed to start build:', error);
             uiManager.showToast(
-                window.t('build_start_failed', 'Failed to start build'), 
+                window.t('build_start_failed', 'Failed to start build: ' + error.message), 
                 'error'
             );
         } finally {
@@ -517,23 +581,75 @@ class KassiaApp {
         }
     }
     
-    async loadJobs() {
-        try {
-            this.jobs = await api.getJobs();
-            console.log(`✅ Loaded ${this.jobs.length} jobs`);
-            
-            this.displayJobs();
-            this.updateDashboardStats();
-            this.updateActiveJob();
-            
-        } catch (error) {
-            console.error('❌ Failed to load jobs:', error);
-            uiManager.showToast(
-                window.t('error_loading_jobs', 'Failed to load jobs'), 
-                'error'
-            );
-        }
-    }
+	async loadJobs() {
+		try {
+			console.log('📋 Loading jobs from API...');
+			const startTime = Date.now();
+			
+			this.jobs = await api.getJobs();
+			
+			const loadTime = Date.now() - startTime;
+			console.log(`✅ Loaded ${this.jobs.length} jobs in ${loadTime}ms`);
+			
+			// Update all UI components
+			this.displayJobs();
+			this.updateDashboardStats();
+			this.updateActiveJob();
+			
+			// Debug log current job statuses
+			const statusCounts = this.jobs.reduce((acc, job) => {
+				acc[job.status] = (acc[job.status] || 0) + 1;
+				return acc;
+			}, {});
+			console.log('📊 Job status breakdown:', statusCounts);
+			
+		} catch (error) {
+			console.error('❌ Failed to load jobs:', error);
+			uiManager.showToast(
+				window.t('error_loading_jobs', 'Failed to load jobs: ' + error.message), 
+				'error'
+			);
+			
+			// Retry after a delay if this was a network error
+			if (error.message.includes('fetch') || error.message.includes('Network')) {
+				console.log('🔄 Retrying job load after network error...');
+				setTimeout(() => {
+					this.loadJobs();
+				}, 5000);
+			}
+		}
+	}
+	
+	async forceRefreshJobs() {
+		console.log('🔄 Force refreshing all job data...');
+		
+		try {
+			// Clear current data
+			this.jobs = [];
+			this.activeJob = null;
+			
+			// Update UI to show loading state
+			const jobsList = document.getElementById('jobsList');
+			if (jobsList) {
+				jobsList.innerHTML = '<div style="text-align: center; padding: 40px;"><div class="loading-spinner"></div> Refreshing jobs...</div>';
+			}
+			
+			// Hide active job card
+			const activeJobCard = document.getElementById('activeJobCard');
+			if (activeJobCard) {
+				activeJobCard.style.display = 'none';
+			}
+			
+			// Reload from API
+			await this.loadJobs();
+			
+			console.log('✅ Force refresh completed');
+			
+		} catch (error) {
+			console.error('❌ Force refresh failed:', error);
+			uiManager.showToast('Failed to refresh jobs', 'error');
+		}
+	}
     
     displayJobs() {
         const jobsList = document.getElementById('jobsList');
@@ -698,86 +814,137 @@ class KassiaApp {
     }
     
     updateActiveJob() {
-        const runningJobs = this.jobs.filter(j => j.status === 'running');
-        const activeJobCard = document.getElementById('activeJobCard');
-        
-        if (!activeJobCard) return;
-        
-        if (runningJobs.length === 0) {
-            activeJobCard.style.display = 'none';
-            this.activeJob = null;
-            return;
-        }
-        
-        // Show the most recent running job
-        const activeJob = runningJobs[0];
-        this.activeJob = activeJob;
-        
-        // Update active job display
-        const elements = {
-            title: document.getElementById('activeJobTitle'),
-            status: document.getElementById('activeJobStatus'),
-            progress: document.getElementById('activeJobProgress'),
-            step: document.getElementById('activeJobStep'),
-            progressBar: document.getElementById('activeJobProgressBar'),
-            logs: document.getElementById('activeJobLogs')
-        };
-        
-        if (elements.title) elements.title.textContent = `${activeJob.device} - OS ${activeJob.os_id}`;
-        if (elements.status) {
-            elements.status.textContent = activeJob.status;
-            elements.status.className = `status-badge ${this.getJobStatusClass(activeJob.status)}`;
-        }
-        if (elements.progress) elements.progress.textContent = `${activeJob.progress || 0}%`;
-        if (elements.step) elements.step.textContent = activeJob.current_step || 'Waiting';
-        if (elements.progressBar) elements.progressBar.style.width = `${activeJob.progress || 0}%`;
-        
-        // Update logs
-        if (elements.logs && activeJob.logs) {
-            const logLines = activeJob.logs.slice(-10).map(log => 
-                `[${log.timestamp.split('T')[1].split('.')[0]}] ${log.level}: ${log.message}`
-            ).join('\n');
-            elements.logs.textContent = logLines || 'No logs yet...';
-            elements.logs.scrollTop = elements.logs.scrollHeight;
-        }
-        
-        activeJobCard.style.display = 'block';
-    }
+		const runningJobs = this.jobs.filter(j => j.status === 'running');
+		const activeJobCard = document.getElementById('activeJobCard');
+		
+		if (!activeJobCard) return;
+		
+		if (runningJobs.length === 0) {
+			// No active jobs, hide the card
+			activeJobCard.style.display = 'none';
+			this.activeJob = null;
+			console.log('👻 No active jobs, hiding active job card');
+			return;
+		}
+		
+		// Show the most recent running job
+		const activeJob = runningJobs[0];
+		this.activeJob = activeJob;
+		
+		console.log('🎯 Updating active job display:', activeJob.id, activeJob.status, activeJob.progress);
+		
+		// Update active job display elements
+		const elements = {
+			title: document.getElementById('activeJobTitle'),
+			status: document.getElementById('activeJobStatus'),
+			progress: document.getElementById('activeJobProgress'),
+			step: document.getElementById('activeJobStep'),
+			progressBar: document.getElementById('activeJobProgressBar'),
+			logs: document.getElementById('activeJobLogs')
+		};
+		
+		if (elements.title) {
+			elements.title.textContent = `${activeJob.device} - OS ${activeJob.os_id}`;
+		}
+		
+		if (elements.status) {
+			elements.status.textContent = activeJob.status;
+			elements.status.className = `status-badge ${this.getJobStatusClass(activeJob.status)}`;
+		}
+		
+		if (elements.progress) {
+			elements.progress.textContent = `${activeJob.progress || 0}%`;
+		}
+		
+		if (elements.step) {
+			elements.step.textContent = activeJob.current_step || 'Waiting';
+		}
+		
+		if (elements.progressBar) {
+			const progress = Math.min(Math.max(activeJob.progress || 0, 0), 100);
+			elements.progressBar.style.width = `${progress}%`;
+		}
+		
+		// Update logs if available
+		if (elements.logs) {
+			if (activeJob.logs && activeJob.logs.length > 0) {
+				const logLines = activeJob.logs.slice(-10).map(log => 
+					`[${log.timestamp.split('T')[1].split('.')[0]}] ${log.level}: ${log.message}`
+				).join('\n');
+				elements.logs.textContent = logLines;
+				elements.logs.scrollTop = elements.logs.scrollHeight;
+			} else {
+				elements.logs.textContent = 'Waiting for job updates...';
+			}
+		}
+		
+		activeJobCard.style.display = 'block';
+	}
     
     handleJobUpdate(data) {
-        console.log('📋 Job update received:', data.job_id, data.data.status);
-        
-        // Find and update job in local array
-        const jobIndex = this.jobs.findIndex(j => j.id === data.job_id);
-        if (jobIndex >= 0) {
-            this.jobs[jobIndex] = data.data;
-        } else {
-            // New job, add to array
-            this.jobs.push(data.data);
-        }
-        
-        // Update UI
-        this.updateDashboardStats();
-        
-        // If currently viewing jobs tab, refresh the display
-        if (uiManager.currentTab === 'jobs') {
-            this.displayJobs();
-        }
-        
-        // Show notification for status changes
-        const job = data.data;
-        if (job.status === 'completed') {
-            uiManager.showToast(
-                window.t('build_completed', 'Build completed successfully!'), 
-                'success'
-            );
-        } else if (job.status === 'failed') {
-            uiManager.showToast(
-                window.t('build_failed', 'Build failed'), 
-                'error'
-            );
-        }
-    }
+		console.log('📋 Job update received:', data.job_id, data.data?.status, data.data?.progress);
+		
+		if (!data.data) {
+			console.error('❌ Invalid job update - missing data:', data);
+			return;
+		}
+		
+		// Find and update job in local array
+		const jobIndex = this.jobs.findIndex(j => j.id === data.job_id);
+		if (jobIndex >= 0) {
+			// Update existing job
+			const oldStatus = this.jobs[jobIndex].status;
+			this.jobs[jobIndex] = { ...this.jobs[jobIndex], ...data.data };
+			
+			console.log(`🔄 Updated job ${data.job_id}: ${oldStatus} -> ${data.data.status}`);
+		} else {
+			// New job, add to array
+			this.jobs.push(data.data);
+			console.log(`➕ Added new job ${data.job_id}: ${data.data.status}`);
+		}
+		
+		// Force immediate UI refresh
+		this.updateDashboardStats();
+		this.updateActiveJob();
+		
+		// If currently viewing jobs tab, refresh the display immediately
+		if (uiManager.currentTab === 'jobs') {
+			this.displayJobs();
+		}
+		
+		// Show notification for status changes
+		const job = data.data;
+		if (job.status === 'completed') {
+			uiManager.showToast(
+				window.t('build_completed', `Build completed successfully! Device: ${job.device}, OS: ${job.os_id}`), 
+				'success',
+				8000 // Show longer for completed jobs
+			);
+			
+			// Auto-refresh after completion to ensure UI is in sync
+			setTimeout(() => {
+				console.log('🔄 Auto-refreshing jobs after completion');
+				this.loadJobs();
+			}, 2000);
+			
+		} else if (job.status === 'failed') {
+			uiManager.showToast(
+				window.t('build_failed', `Build failed: ${job.device}, OS: ${job.os_id}`), 
+				'error',
+				10000 // Show longer for failed jobs
+			);
+			
+			// Auto-refresh after failure
+			setTimeout(() => {
+				console.log('🔄 Auto-refreshing jobs after failure');
+				this.loadJobs();
+			}, 2000);
+			
+		} else if (job.status === 'running' && job.progress) {
+			// Update progress for running jobs
+			console.log(`⏳ Job ${job.device} progress: ${job.progress}% - ${job.current_step}`);
+		}
+	}
     
     async cancelJob(jobId) {
         if (!confirm(window.t('confirm_cancel_job', 'Are you sure you want to cancel this job?'))) {
@@ -805,7 +972,7 @@ class KassiaApp {
     
     async showJobLogs(jobId) {
         try {
-            const logs = await api.getJobLogs(jobId, 'file');
+            const logs = await api.getJobLogs(jobId, 'database');
             
             // Create modal or new window to show logs
             const logWindow = window.open('', '_blank', 'width=800,height=600');
@@ -906,18 +1073,26 @@ class KassiaApp {
         this.loadDevices();
     }
     
-    startPeriodicRefresh() {
-        // Refresh every 30 seconds
-        this.refreshInterval = setInterval(() => {
-            // Only refresh if there are running jobs
-            const hasRunningJobs = this.jobs.some(j => j.status === 'running');
-            if (hasRunningJobs) {
-                console.log('🔄 Periodic refresh: updating jobs...');
-                this.loadJobs();
-            }
-        }, 30000);
-    }
-    
+	startPeriodicRefresh() {
+		// Refresh every 15 seconds instead of 30 for better responsiveness
+		this.refreshInterval = setInterval(() => {
+			const hasRunningJobs = this.jobs.some(j => j.status === 'running');
+			
+			if (hasRunningJobs) {
+				console.log('🔄 Periodic refresh: updating jobs...');
+				this.loadJobs();
+			} else {
+				// Even without running jobs, do a lighter refresh every 2 minutes
+				const now = Date.now();
+				if (!this.lastFullRefresh || (now - this.lastFullRefresh) > 120000) {
+					console.log('🔄 Periodic full refresh (no active jobs)');
+					this.loadJobs();
+					this.lastFullRefresh = now;
+				}
+			}
+		}, 15000); // Every 15 seconds
+	}
+	
     stopPeriodicRefresh() {
         if (this.refreshInterval) {
             clearInterval(this.refreshInterval);
@@ -1003,6 +1178,12 @@ window.addEventListener('error', (event) => {
         );
     }
 });
+
+window.forceRefreshJobs = function() {
+    if (window.kassiaApp && window.kassiaApp.forceRefreshJobs) {
+        window.kassiaApp.forceRefreshJobs();
+    }
+};
 
 // Handle page unload
 window.addEventListener('beforeunload', () => {

@@ -1,5 +1,5 @@
 // web/static/js/ui.js
-// Kassia WebUI - UI Manager
+// Kassia WebUI - UI Manager (FIXED)
 
 class UIManager {
     constructor() {
@@ -41,7 +41,8 @@ class UIManager {
             if ((tabName === 'dashboard' && itemText.includes('dashboard')) ||
                 (tabName === 'build' && itemText.includes('build')) ||
                 (tabName === 'assets' && itemText.includes('assets')) ||
-                (tabName === 'jobs' && itemText.includes('jobs'))) {
+                (tabName === 'jobs' && itemText.includes('jobs')) ||
+                (tabName === 'admin' && itemText.includes('admin'))) {
                 item.classList.add('active');
             }
         });
@@ -133,7 +134,7 @@ class UIManager {
         // Toast content
         toastElement.innerHTML = `
             <div class="toast-content">
-                <span class="toast-message">${toast.message}</span>
+                <span class="toast-message">${this.escapeHtml(toast.message)}</span>
                 <button class="toast-close" onclick="uiManager.closeToast('${toast.id}')">×</button>
             </div>
         `;
@@ -147,7 +148,7 @@ class UIManager {
         }, toast.duration);
         
         return new Promise(resolve => {
-            setTimeout(resolve, toast.duration);
+            setTimeout(resolve, 500); // Shorter delay for better UX
         });
     }
     
@@ -212,7 +213,7 @@ class UIManager {
         element.disabled = false;
     }
     
-    // Form Helpers
+    // Form Helpers - FIXED VERSION
     getFormData(formElement) {
         if (typeof formElement === 'string') {
             formElement = document.getElementById(formElement);
@@ -220,17 +221,25 @@ class UIManager {
         
         if (!formElement) return {};
         
-        const formData = new FormData(formElement);
         const data = {};
         
-        for (let [key, value] of formData.entries()) {
-            // Handle checkboxes
-            if (formElement.querySelector(`[name="${key}"]`).type === 'checkbox') {
-                data[key] = formElement.querySelector(`[name="${key}"]`).checked;
+        // Get all form elements manually to avoid FormData issues
+        const inputs = formElement.querySelectorAll('input, select, textarea');
+        
+        inputs.forEach(input => {
+            const name = input.name || input.id;
+            if (!name) return;
+            
+            if (input.type === 'checkbox') {
+                data[name] = input.checked;
+            } else if (input.type === 'radio') {
+                if (input.checked) {
+                    data[name] = input.value;
+                }
             } else {
-                data[key] = value;
+                data[name] = input.value;
             }
-        }
+        });
         
         return data;
     }
@@ -243,10 +252,14 @@ class UIManager {
         if (!formElement) return;
         
         Object.entries(data).forEach(([key, value]) => {
-            const field = formElement.querySelector(`[name="${key}"]`);
+            const field = formElement.querySelector(`[name="${key}"], #${key}`);
             if (field) {
                 if (field.type === 'checkbox') {
                     field.checked = Boolean(value);
+                } else if (field.type === 'radio') {
+                    if (field.value === value) {
+                        field.checked = true;
+                    }
                 } else {
                     field.value = value;
                 }
@@ -259,12 +272,12 @@ class UIManager {
             formElement = document.getElementById(formElement);
         }
         
-        if (formElement) {
+        if (formElement && formElement.reset) {
             formElement.reset();
         }
     }
     
-    // Validation
+    // Validation - SIMPLIFIED VERSION
     validateForm(formElement, rules = {}) {
         if (typeof formElement === 'string') {
             formElement = document.getElementById(formElement);
@@ -273,25 +286,32 @@ class UIManager {
         if (!formElement) return { valid: false, errors: ['Form not found'] };
         
         const errors = [];
-        const data = this.getFormData(formElement);
         
-        Object.entries(rules).forEach(([field, rule]) => {
-            const value = data[field];
+        // Manual validation instead of using getFormData
+        Object.entries(rules).forEach(([fieldName, rule]) => {
+            const field = formElement.querySelector(`[name="${fieldName}"], #${fieldName}`);
+            
+            if (!field) {
+                console.warn(`Field ${fieldName} not found in form`);
+                return;
+            }
+            
+            const value = field.value;
             
             if (rule.required && (!value || value.trim() === '')) {
-                errors.push(window.t(`validation_${field}_required`, `${field} is required`));
+                errors.push(window.t(`validation_${fieldName}_required`, `${fieldName} is required`));
             }
             
             if (rule.minLength && value && value.length < rule.minLength) {
-                errors.push(window.t(`validation_${field}_min_length`, `${field} must be at least ${rule.minLength} characters`));
+                errors.push(window.t(`validation_${fieldName}_min_length`, `${fieldName} must be at least ${rule.minLength} characters`));
             }
             
             if (rule.pattern && value && !rule.pattern.test(value)) {
-                errors.push(window.t(`validation_${field}_pattern`, `${field} format is invalid`));
+                errors.push(window.t(`validation_${fieldName}_pattern`, `${fieldName} format is invalid`));
             }
             
             if (rule.custom && typeof rule.custom === 'function') {
-                const customError = rule.custom(value, data);
+                const customError = rule.custom(value);
                 if (customError) {
                     errors.push(customError);
                 }
@@ -300,8 +320,7 @@ class UIManager {
         
         return {
             valid: errors.length === 0,
-            errors,
-            data
+            errors
         };
     }
     
@@ -335,6 +354,7 @@ class UIManager {
     }
     
     escapeHtml(text) {
+        if (!text) return '';
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
