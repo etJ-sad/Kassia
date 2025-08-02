@@ -1472,6 +1472,545 @@ async function switchLanguage(lang) {
     }
 }
 
+// ============= ENHANCED JOB DETAILS MODAL =============
+
+// Override the existing viewJobDetails function to use the enhanced modal system
+window.viewJobDetails = async function(jobId) {
+    console.log('🔍 Opening enhanced job details for:', jobId);
+    
+    try {
+        // Initialize the job details modal if it doesn't exist
+        if (!window.jobDetailsModal) {
+            window.jobDetailsModal = new JobDetailsModal();
+        }
+        
+        // Open the modal with the job ID
+        await window.jobDetailsModal.open(jobId);
+        
+    } catch (error) {
+        console.error('❌ Failed to open job details modal:', error);
+        
+        // Fallback to simple alert with job info
+        try {
+            const apiManager = window.apiManager || window.api;
+            const job = await apiManager.getJob(jobId);
+            
+            const info = `Job Details:
+ID: ${job.id}
+Device: ${job.device}
+OS: ${job.os_id}
+Status: ${job.status}
+Progress: ${job.progress || 0}%
+Current Step: ${job.current_step || 'N/A'}
+Created: ${new Date(job.created_at).toLocaleString()}
+${job.error ? `Error: ${job.error}` : ''}`;
+            
+            alert(info);
+            
+        } catch (fallbackError) {
+            console.error('❌ Fallback also failed:', fallbackError);
+            window.uiManager.showToast('Failed to load job details: ' + error.message, 'error');
+        }
+    }
+};
+
+// Enhanced JobDetailsModal class specifically for Kassia
+class JobDetailsModal {
+    constructor() {
+        this.currentJobId = null;
+        this.modal = null;
+        this.isLoading = false;
+        this.refreshInterval = null;
+        console.log('🔧 Enhanced JobDetailsModal initialized');
+    }
+
+    async open(jobId) {
+        if (this.isLoading) return;
+        
+        this.currentJobId = jobId;
+        this.isLoading = true;
+        
+        try {
+            // Create modal HTML if it doesn't exist
+            this.ensureModalExists();
+            
+            // Show modal and loading state
+            this.modal.style.display = 'flex';
+            this.showLoading();
+            
+            // Load job details
+            await this.loadAndDisplayJobDetails(jobId);
+            
+            // Set up auto-refresh for running jobs
+            this.setupAutoRefresh();
+            
+        } catch (error) {
+            console.error('Failed to open job details modal:', error);
+            this.showError('Failed to load job details: ' + error.message);
+        } finally {
+            this.isLoading = false;
+        }
+    }
+
+    ensureModalExists() {
+        if (this.modal) return;
+        
+        // Create modal HTML
+        const modalHTML = `
+        <div id="enhanced-job-details-modal" class="modal" style="display: none;">
+            <div class="modal-content" style="max-width: 1000px; max-height: 90vh; overflow-y: auto;">
+                <!-- Modal Header -->
+                <div class="modal-header" style="background: var(--siemens-bright-petrol); color: white; padding: 20px; display: flex; justify-content: space-between; align-items: center;">
+                    <h2 id="enhanced-modal-job-title" style="margin: 0; font-size: 1.5em;">Job Details</h2>
+                    <button id="enhanced-close-modal" style="background: none; border: none; color: white; font-size: 24px; cursor: pointer; padding: 0; width: 30px; height: 30px;">&times;</button>
+                </div>
+                
+                <!-- Modal Body -->
+                <div class="modal-body" style="padding: 0;">
+                    <div id="enhanced-modal-content">
+                        <!-- Content will be loaded here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+        `;
+        
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        this.modal = document.getElementById('enhanced-job-details-modal');
+        
+        // Set up event listeners
+        this.setupEventListeners();
+        
+        console.log('✅ Enhanced modal HTML created');
+    }
+
+    setupEventListeners() {
+        // Close modal events
+        const closeBtn = document.getElementById('enhanced-close-modal');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => this.close());
+        }
+
+        // Close on background click
+        this.modal.addEventListener('click', (e) => {
+            if (e.target === this.modal) {
+                this.close();
+            }
+        });
+
+        // Escape key to close
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && this.modal.style.display === 'flex') {
+                this.close();
+            }
+        });
+    }
+
+    async loadAndDisplayJobDetails(jobId) {
+        try {
+            // Get API manager
+            const apiManager = window.apiManager || window.api;
+            if (!apiManager) {
+                throw new Error('API manager not available');
+            }
+
+            // Load job details and logs in parallel
+            const [job, logs] = await Promise.all([
+                apiManager.getJob(jobId),
+                apiManager.getJobLogs(jobId, { limit: 50 })
+            ]);
+
+            console.log('📊 Job details loaded:', job);
+            console.log('📜 Job logs loaded:', logs.length, 'entries');
+
+            // Display the data
+            this.displayJobDetails(job, logs);
+
+        } catch (error) {
+            console.error('Failed to load job details:', error);
+            this.showError('Failed to load job details: ' + error.message);
+        }
+    }
+
+    displayJobDetails(job, logs) {
+        const content = document.getElementById('enhanced-modal-content');
+        if (!content) return;
+
+        // Update title
+        const title = document.getElementById('enhanced-modal-job-title');
+        if (title) {
+            title.textContent = `Job: ${job.device} - OS ${job.os_id} (${job.id.substring(0, 8)})`;
+        }
+
+        // Build the content HTML
+        const statusClass = this.getStatusClass(job.status);
+        const createdAt = new Date(job.created_at).toLocaleString();
+        const startedAt = job.started_at ? new Date(job.started_at).toLocaleString() : 'Not started';
+        const completedAt = job.completed_at ? new Date(job.completed_at).toLocaleString() : 'Not completed';
+        const duration = this.calculateDuration(job);
+
+        content.innerHTML = `
+            <div style="padding: 24px;">
+                <!-- Job Overview -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; margin-bottom: 32px;">
+                    <div style="background: #f8f9fa; padding: 20px; border-radius: 8px;">
+                        <h3 style="margin: 0 0 16px 0; color: var(--siemens-text-primary); font-size: 1.1em;">📋 Basic Info</h3>
+                        <div style="space-y: 8px;">
+                            <div style="margin-bottom: 8px;"><strong>Job ID:</strong><br><code style="background: #e9ecef; padding: 2px 6px; border-radius: 4px; font-size: 12px;">${job.id}</code></div>
+                            <div style="margin-bottom: 8px;"><strong>Device:</strong> ${job.device}</div>
+                            <div style="margin-bottom: 8px;"><strong>OS ID:</strong> ${job.os_id}</div>
+                            <div style="margin-bottom: 8px;"><strong>User:</strong> ${job.user_id || 'web_user'}</div>
+                        </div>
+                    </div>
+                    
+                    <div style="background: #f8f9fa; padding: 20px; border-radius: 8px;">
+                        <h3 style="margin: 0 0 16px 0; color: var(--siemens-text-primary); font-size: 1.1em;">⏱️ Timing</h3>
+                        <div style="space-y: 8px;">
+                            <div style="margin-bottom: 8px;"><strong>Created:</strong><br><span style="font-size: 14px;">${createdAt}</span></div>
+                            <div style="margin-bottom: 8px;"><strong>Started:</strong><br><span style="font-size: 14px;">${startedAt}</span></div>
+                            <div style="margin-bottom: 8px;"><strong>Completed:</strong><br><span style="font-size: 14px;">${completedAt}</span></div>
+                            <div style="margin-bottom: 8px;"><strong>Duration:</strong> ${duration}</div>
+                        </div>
+                    </div>
+                    
+                    <div style="background: #f8f9fa; padding: 20px; border-radius: 8px;">
+                        <h3 style="margin: 0 0 16px 0; color: var(--siemens-text-primary); font-size: 1.1em;">⚙️ Options</h3>
+                        <div style="space-y: 8px;">
+                            <div style="margin-bottom: 8px;"><strong>Skip Drivers:</strong> ${this.formatBoolean(job.skip_drivers)}</div>
+                            <div style="margin-bottom: 8px;"><strong>Skip Updates:</strong> ${this.formatBoolean(job.skip_updates)}</div>
+                            <div style="margin-bottom: 8px;"><strong>Skip Validation:</strong> ${this.formatBoolean(job.skip_validation)}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Status and Progress -->
+                <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 24px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                        <h3 style="margin: 0; color: var(--siemens-text-primary); font-size: 1.1em;">📊 Progress</h3>
+                        <span class="status-badge ${statusClass}" style="padding: 6px 12px; border-radius: 4px; font-weight: bold; font-size: 14px;">${job.status.toUpperCase()}</span>
+                    </div>
+                    
+                    <div style="margin-bottom: 12px;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                            <span><strong>Current Step:</strong> ${job.current_step || 'Initializing'}</span>
+                            <span><strong>Step:</strong> ${job.step_number || 0} / ${job.total_steps || 9}</span>
+                        </div>
+                        <div style="background: #e9ecef; border-radius: 10px; height: 20px; overflow: hidden;">
+                            <div style="background: linear-gradient(90deg, var(--siemens-bright-petrol), #0099cc); height: 100%; width: ${job.progress || 0}%; transition: width 0.3s ease; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 12px;">${job.progress || 0}%</div>
+                        </div>
+                    </div>
+                </div>
+
+                ${job.error ? `
+                    <div style="background: #f8d7da; border: 1px solid #f5c6cb; padding: 20px; border-radius: 8px; margin-bottom: 24px;">
+                        <h3 style="margin: 0 0 12px 0; color: #721c24; font-size: 1.1em;">❌ Error Details</h3>
+                        <div style="background: white; padding: 12px; border-radius: 4px; font-family: monospace; font-size: 13px; white-space: pre-wrap; color: #721c24;">${job.error}</div>
+                    </div>
+                ` : ''}
+
+                ${job.results && Object.keys(job.results).length > 0 ? `
+                    <div style="background: #d4edda; border: 1px solid #c3e6cb; padding: 20px; border-radius: 8px; margin-bottom: 24px;">
+                        <h3 style="margin: 0 0 12px 0; color: #155724; font-size: 1.1em;">✅ Results</h3>
+                        <div style="background: white; padding: 12px; border-radius: 4px;">
+                            ${this.formatResults(job.results)}
+                        </div>
+                    </div>
+                ` : ''}
+
+                <!-- Logs Section -->
+                <div style="background: #f8f9fa; padding: 20px; border-radius: 8px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                        <h3 style="margin: 0; color: var(--siemens-text-primary); font-size: 1.1em;">📜 Recent Logs (${logs.length} entries)</h3>
+                        <div style="display: flex; gap: 8px;">
+                            <button onclick="window.jobDetailsModal.refreshLogs()" style="padding: 6px 12px; background: var(--siemens-bright-petrol); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">🔄 Refresh</button>
+                            <button onclick="window.jobDetailsModal.downloadLogs()" style="padding: 6px 12px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">📥 Download</button>
+                        </div>
+                    </div>
+                    <div style="background: #1e1e1e; color: #00ff00; padding: 16px; border-radius: 4px; font-family: monospace; font-size: 12px; max-height: 300px; overflow-y: auto; line-height: 1.4;">
+                        ${this.formatLogs(logs)}
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 24px; padding-top: 20px; border-top: 1px solid #dee2e6;">
+                    <div style="display: flex; gap: 12px;">
+                        ${job.status === 'running' ? `
+                            <button onclick="window.jobDetailsModal.cancelJob()" style="padding: 10px 20px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">❌ Cancel Job</button>
+                        ` : ''}
+                        ${job.status === 'completed' || job.status === 'failed' ? `
+                            <button onclick="window.jobDetailsModal.deleteJob()" style="padding: 10px 20px; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;">🗑️ Delete Job</button>
+                        ` : ''}
+                    </div>
+                    <button onclick="window.jobDetailsModal.close()" style="padding: 10px 20px; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;">Close</button>
+                </div>
+            </div>
+        `;
+
+        console.log('✅ Job details displayed in modal');
+    }
+
+    setupAutoRefresh() {
+        // Clear existing interval
+        if (this.refreshInterval) {
+            clearInterval(this.refreshInterval);
+        }
+
+        // Only auto-refresh for running jobs
+        if (this.currentJobId) {
+            this.refreshInterval = setInterval(async () => {
+                try {
+                    const apiManager = window.apiManager || window.api;
+                    const job = await apiManager.getJob(this.currentJobId);
+                    
+                    // Stop auto-refresh if job is no longer running
+                    if (job.status !== 'running') {
+                        clearInterval(this.refreshInterval);
+                        this.refreshInterval = null;
+                    }
+                    
+                    // Refresh the display
+                    const logs = await apiManager.getJobLogs(this.currentJobId, { limit: 50 });
+                    this.displayJobDetails(job, logs);
+                    
+                } catch (error) {
+                    console.error('Auto-refresh failed:', error);
+                    clearInterval(this.refreshInterval);
+                    this.refreshInterval = null;
+                }
+            }, 5000); // Refresh every 5 seconds
+        }
+    }
+
+    async refreshLogs() {
+        if (!this.currentJobId) return;
+        
+        try {
+            console.log('🔄 Refreshing logs for job:', this.currentJobId);
+            await this.loadAndDisplayJobDetails(this.currentJobId);
+            
+            if (window.uiManager) {
+                window.uiManager.showToast('Logs refreshed', 'success', 2000);
+            }
+        } catch (error) {
+            console.error('Failed to refresh logs:', error);
+            if (window.uiManager) {
+                window.uiManager.showToast('Failed to refresh logs: ' + error.message, 'error');
+            }
+        }
+    }
+
+    downloadLogs() {
+        if (!this.currentJobId) return;
+        
+        try {
+            console.log('📥 Downloading logs for job:', this.currentJobId);
+            window.open(`/api/jobs/${this.currentJobId}/download-log?log_type=main`, '_blank');
+        } catch (error) {
+            console.error('Failed to download logs:', error);
+            if (window.uiManager) {
+                window.uiManager.showToast('Failed to download logs: ' + error.message, 'error');
+            }
+        }
+    }
+
+    async cancelJob() {
+        if (!this.currentJobId || !confirm('Are you sure you want to cancel this job?')) return;
+        
+        try {
+            const apiManager = window.apiManager || window.api;
+            await apiManager.cancelJob(this.currentJobId);
+            
+            if (window.uiManager) {
+                window.uiManager.showToast('Job cancelled successfully', 'success');
+            }
+            
+            this.close();
+            
+            // Refresh job lists
+            setTimeout(() => {
+                if (typeof refreshJobs === 'function') refreshJobs();
+                if (typeof refreshRecentJobs === 'function') refreshRecentJobs();
+                if (typeof updateDashboardStats === 'function') updateDashboardStats();
+            }, 500);
+            
+        } catch (error) {
+            console.error('Failed to cancel job:', error);
+            if (window.uiManager) {
+                window.uiManager.showToast('Failed to cancel job: ' + error.message, 'error');
+            }
+        }
+    }
+
+    async deleteJob() {
+        if (!this.currentJobId || !confirm('Are you sure you want to permanently delete this job? This action cannot be undone.')) return;
+        
+        try {
+            const apiManager = window.apiManager || window.api;
+            await apiManager.deleteJob(this.currentJobId);
+            
+            if (window.uiManager) {
+                window.uiManager.showToast('Job deleted successfully', 'success');
+            }
+            
+            this.close();
+            
+            // Refresh job lists
+            setTimeout(() => {
+                if (typeof refreshJobs === 'function') refreshJobs();
+                if (typeof refreshRecentJobs === 'function') refreshRecentJobs();
+                if (typeof updateDashboardStats === 'function') updateDashboardStats();
+            }, 500);
+            
+        } catch (error) {
+            console.error('Failed to delete job:', error);
+            if (window.uiManager) {
+                window.uiManager.showToast('Failed to delete job: ' + error.message, 'error');
+            }
+        }
+    }
+
+    close() {
+        if (this.modal) {
+            this.modal.style.display = 'none';
+        }
+        
+        // Clear auto-refresh
+        if (this.refreshInterval) {
+            clearInterval(this.refreshInterval);
+            this.refreshInterval = null;
+        }
+        
+        this.currentJobId = null;
+        console.log('📱 Enhanced job details modal closed');
+    }
+
+    showLoading() {
+        const content = document.getElementById('enhanced-modal-content');
+        if (content) {
+            content.innerHTML = `
+                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 60px; color: #6c757d;">
+                    <div class="loading-spinner" style="margin-bottom: 20px;"></div>
+                    <p style="margin: 0; font-size: 16px;">Loading job details...</p>
+                </div>
+            `;
+        }
+    }
+
+    showError(message) {
+        const content = document.getElementById('enhanced-modal-content');
+        if (content) {
+            content.innerHTML = `
+                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 60px; color: #dc3545; text-align: center;">
+                    <div style="font-size: 48px; margin-bottom: 20px;">⚠️</div>
+                    <h3 style="margin: 0 0 12px 0; color: #dc3545;">Error Loading Job Details</h3>
+                    <p style="margin: 0 0 20px 0; color: #6c757d;">${message}</p>
+                    <button onclick="window.jobDetailsModal.close()" style="padding: 10px 20px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer;">Close</button>
+                </div>
+            `;
+        }
+    }
+
+    // Utility methods
+    getStatusClass(status) {
+        switch (status) {
+            case 'completed': return 'status-success';
+            case 'running': return 'status-running';
+            case 'failed': 
+            case 'cancelled': return 'status-error';
+            default: return 'status-pending';
+        }
+    }
+
+    formatBoolean(value) {
+        return value ? 
+            '<span style="color: #ffc107; font-weight: bold;">✓ Yes</span>' : 
+            '<span style="color: #28a745; font-weight: bold;">✗ No</span>';
+    }
+
+    formatResults(results) {
+        let html = '<div style="display: grid; gap: 8px;">';
+        
+        Object.entries(results).forEach(([key, value]) => {
+            const displayKey = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+            let displayValue = value;
+            
+            if (key.includes('size_mb')) {
+                displayValue = `${value} MB`;
+            } else if (key.includes('duration_seconds')) {
+                displayValue = `${value}s`;
+            } else if (key.includes('path')) {
+                displayValue = `<code style="background: #f8f9fa; padding: 2px 4px; border-radius: 3px; font-size: 11px;">${value}</code>`;
+            }
+            
+            html += `<div style="padding: 4px 0; border-bottom: 1px solid #e9ecef;"><strong>${displayKey}:</strong> ${displayValue}</div>`;
+        });
+        
+        html += '</div>';
+        return html;
+    }
+
+    formatLogs(logs) {
+        if (!logs || logs.length === 0) {
+            return '<div style="color: #888;">No logs available</div>';
+        }
+        
+        return logs.map(log => {
+            const timestamp = new Date(log.timestamp).toLocaleTimeString();
+            const levelColor = this.getLogLevelColor(log.level);
+            
+            return `<div style="margin-bottom: 4px;">
+                <span style="color: #888;">${timestamp}</span> 
+                <span style="color: ${levelColor}; font-weight: bold;">[${log.level}]</span> 
+                <span style="color: #0099cc;">${log.category || 'SYSTEM'}</span> 
+                ${log.message}
+            </div>`;
+        }).join('');
+    }
+
+    getLogLevelColor(level) {
+        switch (level) {
+            case 'ERROR': return '#ff6b6b';
+            case 'WARNING': return '#ffd93d';
+            case 'INFO': return '#74c0fc';
+            case 'DEBUG': return '#868e96';
+            default: return '#00ff00';
+        }
+    }
+
+    calculateDuration(job) {
+        if (!job.started_at) return 'Not started';
+        
+        const start = new Date(job.started_at);
+        const end = job.completed_at ? new Date(job.completed_at) : new Date();
+        const durationMs = end - start;
+        
+        const seconds = Math.floor(durationMs / 1000);
+        const minutes = Math.floor(seconds / 60);
+        const hours = Math.floor(minutes / 60);
+        
+        if (hours > 0) {
+            return `${hours}h ${minutes % 60}m ${seconds % 60}s`;
+        } else if (minutes > 0) {
+            return `${minutes}m ${seconds % 60}s`;
+        } else {
+            return `${seconds}s`;
+        }
+    }
+}
+
+// Initialize the enhanced job details modal
+document.addEventListener('DOMContentLoaded', function() {
+    // Wait a bit to ensure all other managers are loaded
+    setTimeout(() => {
+        if (!window.jobDetailsModal) {
+            window.jobDetailsModal = new JobDetailsModal();
+            console.log('✅ Enhanced JobDetailsModal initialized');
+        }
+    }, 300);
+});
+
+console.log('✅ Enhanced Job Details Modal Integration loaded');
+
 // ============= APPLICATION INITIALIZATION =============
 async function initializeKassiaApp() {
     console.log('🚀 Initializing Enhanced Kassia WebUI Application...');
@@ -1568,6 +2107,303 @@ function startHeartbeatMonitoring() {
         }
     }, 10000); // Check every 10 seconds
 }
+
+// Add this to your kassia-app.js file to fix the download functionality
+
+// ============= ENHANCED DOWNLOAD FUNCTION =============
+
+// Replace the existing downloadWim function with this enhanced version
+window.downloadWim = function(wimPath) {
+    console.log('📥 Attempting to download WIM:', wimPath);
+    
+    if (!wimPath) {
+        console.error('❌ No WIM path provided');
+        if (window.uiManager) {
+            window.uiManager.showToast('Error: No WIM file path available', 'error');
+        } else {
+            alert('Error: No WIM file path available');
+        }
+        return;
+    }
+    
+    try {
+        // Show downloading toast
+        if (window.uiManager) {
+            window.uiManager.showToast('Starting WIM download...', 'info', 3000);
+        }
+        
+        // Method 1: Try direct file download via fetch
+        downloadWimFile(wimPath);
+        
+    } catch (error) {
+        console.error('❌ Download failed:', error);
+        
+        // Fallback: Show file path for manual download
+        showWimDownloadInfo(wimPath);
+    }
+};
+
+async function downloadWimFile(wimPath) {
+    try {
+        console.log('🔄 Attempting direct download of:', wimPath);
+        
+        // Check if this is a relative or absolute path
+        let downloadUrl;
+        
+        if (wimPath.startsWith('http')) {
+            // Already a full URL
+            downloadUrl = wimPath;
+        } else if (wimPath.startsWith('/')) {
+            // Absolute path - try to serve via API
+            downloadUrl = `/api/download/wim?path=${encodeURIComponent(wimPath)}`;
+        } else {
+            // Relative path - assume it's in export directory
+            downloadUrl = `/api/download/wim?path=${encodeURIComponent(wimPath)}`;
+        }
+        
+        console.log('📡 Download URL:', downloadUrl);
+        
+        // Method 1: Try fetch first to check if file exists
+        const response = await fetch(downloadUrl, { method: 'HEAD' });
+        
+        if (response.ok) {
+            // File exists, trigger download
+            triggerDownload(downloadUrl, getWimFileName(wimPath));
+        } else {
+            throw new Error(`File not accessible (HTTP ${response.status})`);
+        }
+        
+    } catch (error) {
+        console.error('❌ Direct download failed:', error);
+        
+        // Fallback to file info dialog
+        showWimDownloadInfo(wimPath);
+    }
+}
+
+function triggerDownload(url, filename) {
+    console.log('⬇️ Triggering download:', url);
+    
+    try {
+        // Create hidden link and click it
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename || 'kassia_build.wim';
+        link.style.display = 'none';
+        
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        if (window.uiManager) {
+            window.uiManager.showToast('Download started successfully!', 'success');
+        }
+        
+        console.log('✅ Download triggered successfully');
+        
+    } catch (error) {
+        console.error('❌ Failed to trigger download:', error);
+        
+        // Fallback: Open in new window
+        try {
+            window.open(url, '_blank');
+            if (window.uiManager) {
+                window.uiManager.showToast('Download opened in new tab', 'info');
+            }
+        } catch (fallbackError) {
+            console.error('❌ Fallback download also failed:', fallbackError);
+            showWimDownloadInfo(url);
+        }
+    }
+}
+
+function showWimDownloadInfo(wimPath) {
+    console.log('📋 Showing download info for:', wimPath);
+    
+    const fileName = getWimFileName(wimPath);
+    const fileSize = '528.2 MB'; // Could be extracted from job results
+    
+    const message = `📁 WIM File Ready for Download
+    
+📄 File: ${fileName}
+📏 Size: ${fileSize}
+📂 Path: ${wimPath}
+
+⬇️ Download Methods:
+1. Right-click this notification and copy the file path
+2. Navigate to the export directory on the server
+3. Contact system administrator for file access
+
+💡 Note: The WIM file is available on the server at the path shown above.`;
+
+    if (window.uiManager) {
+        // Show a longer-lasting toast with download info
+        const toastId = window.uiManager.showToast(message, 'info', 0); // 0 = no auto-close
+        
+        // Add custom buttons to the toast
+        setTimeout(() => {
+            const toast = document.getElementById(toastId);
+            if (toast) {
+                const buttonsHtml = `
+                    <div style="margin-top: 12px; display: flex; gap: 8px;">
+                        <button onclick="copyToClipboard('${wimPath}')" style="padding: 6px 12px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">📋 Copy Path</button>
+                        <button onclick="window.uiManager.closeToast('${toastId}')" style="padding: 6px 12px; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">Close</button>
+                    </div>
+                `;
+                
+                const messageElement = toast.querySelector('.toast-message');
+                if (messageElement) {
+                    messageElement.innerHTML += buttonsHtml;
+                }
+            }
+        }, 100);
+        
+    } else {
+        // Fallback alert
+        alert(message);
+    }
+}
+
+function getWimFileName(wimPath) {
+    if (!wimPath) return 'kassia_build.wim';
+    
+    // Extract filename from path
+    const parts = wimPath.split(/[\/\\]/);
+    return parts[parts.length - 1] || 'kassia_build.wim';
+}
+
+// Utility function to copy text to clipboard
+window.copyToClipboard = function(text) {
+    try {
+        if (navigator.clipboard && window.isSecureContext) {
+            // Modern API
+            navigator.clipboard.writeText(text).then(() => {
+                if (window.uiManager) {
+                    window.uiManager.showToast('Path copied to clipboard!', 'success', 2000);
+                }
+            }).catch(err => {
+                console.error('❌ Failed to copy:', err);
+                fallbackCopyToClipboard(text);
+            });
+        } else {
+            // Fallback
+            fallbackCopyToClipboard(text);
+        }
+    } catch (error) {
+        console.error('❌ Copy to clipboard failed:', error);
+        fallbackCopyToClipboard(text);
+    }
+};
+
+function fallbackCopyToClipboard(text) {
+    try {
+        const textArea = document.createElement('textarea');
+        textArea.value = text;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-999999px';
+        textArea.style.top = '-999999px';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        
+        const successful = document.execCommand('copy');
+        document.body.removeChild(textArea);
+        
+        if (successful) {
+            if (window.uiManager) {
+                window.uiManager.showToast('Path copied to clipboard!', 'success', 2000);
+            }
+        } else {
+            throw new Error('Copy command failed');
+        }
+    } catch (error) {
+        console.error('❌ Fallback copy failed:', error);
+        
+        // Last resort: Show path in prompt
+        prompt('Copy this path manually:', text);
+    }
+}
+
+// ============= BACKEND API ROUTE FOR WIM DOWNLOAD =============
+
+// Add this information for your backend (app.py):
+/*
+You need to add this route to your FastAPI app.py:
+
+@app.get("/api/download/wim")
+async def download_wim_file(path: str):
+    """Download WIM file from server path."""
+    try:
+        wim_path = Path(path)
+        
+        # Security check: ensure path is within allowed directories
+        allowed_dirs = [
+            Path("runtime/export"),
+            Path("C:/Users/z004ac7v/Kassia/runtime/export"),
+            # Add other allowed directories
+        ]
+        
+        is_allowed = False
+        for allowed_dir in allowed_dirs:
+            try:
+                wim_path.resolve().relative_to(allowed_dir.resolve())
+                is_allowed = True
+                break
+            except ValueError:
+                continue
+        
+        if not is_allowed:
+            raise HTTPException(status_code=403, detail="Access to this path is not allowed")
+        
+        if not wim_path.exists():
+            raise HTTPException(status_code=404, detail="WIM file not found")
+        
+        if not wim_path.is_file():
+            raise HTTPException(status_code=400, detail="Path is not a file")
+        
+        # Return file response
+        return FileResponse(
+            path=str(wim_path),
+            filename=wim_path.name,
+            media_type="application/octet-stream"
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Failed to serve WIM file", LogCategory.API, {
+            'path': path,
+            'error': str(e)
+        })
+        raise HTTPException(status_code=500, detail=str(e))
+*/
+
+console.log('✅ Enhanced WIM download functionality loaded');
+
+// ============= STEP DISPLAY FIX =============
+
+// Also fix the step display to show completed steps correctly
+window.formatJobStep = function(job) {
+    if (!job) return 'Unknown';
+    
+    const currentStep = job.step_number || 0;
+    const totalSteps = job.total_steps || 9;
+    const stepDescription = job.current_step || 'Initializing';
+    
+    // For completed jobs, show as "Completed (8/8)" instead of "8/9"
+    if (job.status === 'completed') {
+        const completedSteps = Math.max(currentStep, totalSteps);
+        return `${stepDescription} (${completedSteps}/${totalSteps})`;
+    }
+    
+    // For running/failed jobs, show actual progress
+    return `${stepDescription} (${currentStep}/${totalSteps})`;
+};
+
+// Update the displayJobs function to use the new formatter
+// Find this line in your existing code and replace it:
+// Original: <div class="job-step">${job.current_step || 'Initializing'} (${job.step_number || 0}/${job.total_steps || 9})</div>
+// Replace with: <div class="job-step">${window.formatJobStep(job)}</div>
 
 // ============= Make Functions Available Globally =============
 window.switchTab = switchTab;

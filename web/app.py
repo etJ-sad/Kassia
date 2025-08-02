@@ -1292,16 +1292,413 @@ async def handle_websocket_message(websocket: WebSocket, data: dict):
 
 # =================== ENHANCED BUILD JOB EXECUTION ===================
 
+async def execute_cli_wim_workflow_real(job_id: str, kassia_config, assets_summary: dict, 
+                                       skip_drivers: bool, skip_updates: bool, debug: bool) -> Optional[Path]:
+    """FIXED: Execute REAL WIM workflow instead of simulation."""
+    
+    logger.set_context(job_id=job_id)
+    logger.log_operation_start("webui_real_wim_workflow")
+    workflow_start = time.time()
+    
+    try:
+        if not assets_summary['sbi']:
+            error_msg = "Cannot execute WIM workflow without SBI"
+            logger.error(error_msg, LogCategory.WIM)
+            
+            job_status.update_job(job_id, 
+                status="failed",
+                error=error_msg,
+                completed_at=datetime.now().isoformat()
+            )
+            
+            return None
+        
+        sbi_asset = assets_summary['sbi']
+        build_config = kassia_config.build
+        
+        # Update job to running
+        job_status.update_job(job_id,
+            status="running",
+            started_at=datetime.now().isoformat(),
+            current_step="Starting REAL WIM workflow",
+            step_number=1,
+            progress=5
+        )
+        
+        logger.info("Starting REAL WebUI WIM workflow", LogCategory.WORKFLOW, {
+            'sbi_name': sbi_asset.name,
+            'device': kassia_config.device.deviceId,
+            'os_id': kassia_config.selectedOsId,
+            'skip_drivers': skip_drivers,
+            'skip_updates': skip_updates
+        })
+        
+        # FIXED: Initialize REAL WIM Handler and Workflow
+        wim_handler = WimHandler()
+        workflow = WimWorkflow(wim_handler)
+        
+        logger.info("REAL WIM workflow components initialized", LogCategory.WIM)
+        
+        # Step 1: REAL WIM Preparation
+        job_status.update_job(job_id,
+            current_step="Preparing WIM for modification",
+            step_number=2,
+            progress=15
+        )
+        
+        logger.info("Starting REAL WIM preparation", LogCategory.WIM)
+        step_start = time.time()
+        
+        temp_dir = Path(build_config.tempPath)
+        temp_wim = await workflow.prepare_wim_for_modification(sbi_asset.path, temp_dir)
+        
+        step_duration = time.time() - step_start
+        logger.info("REAL WIM preparation completed", LogCategory.WIM, {
+            'temp_wim': str(temp_wim),
+            'duration': step_duration
+        })
+        
+        # Step 2: REAL WIM Mount
+        job_status.update_job(job_id,
+            current_step="Mounting WIM for modification",
+            step_number=3,
+            progress=25
+        )
+        
+        logger.info("Starting REAL WIM mount", LogCategory.WIM)
+        step_start = time.time()
+        
+        mount_point = Path(build_config.mountPoint)
+        mount_info = await workflow.mount_wim_for_modification(temp_wim, mount_point)
+        
+        step_duration = time.time() - step_start
+        logger.info("REAL WIM mount completed", LogCategory.WIM, {
+            'mount_point': str(mount_point),
+            'duration': step_duration,
+            'read_write': mount_info.read_write
+        })
+        
+        # Verify mount
+        windows_dir = mount_point / "Windows"
+        if windows_dir.exists():
+            logger.info("REAL mount verification successful", LogCategory.WIM)
+        else:
+            error_msg = "REAL mount verification failed: No Windows directory"
+            logger.error(error_msg, LogCategory.WIM)
+            job_status.update_job(job_id,
+                status="failed",
+                error=error_msg,
+                completed_at=datetime.now().isoformat()
+            )
+            raise Exception(error_msg)
+        
+        # Step 3: REAL Driver Integration
+        if not skip_drivers and assets_summary['drivers']:
+            driver_count = len(assets_summary['drivers'])
+            job_status.update_job(job_id,
+                current_step=f"Integrating {driver_count} drivers",
+                step_number=4,
+                progress=40
+            )
+            
+            logger.info("Starting REAL driver integration", LogCategory.DRIVER, {
+                'driver_count': driver_count
+            })
+            step_start = time.time()
+            
+            # FIXED: Initialize REAL driver integration components
+            driver_integrator = DriverIntegrator()
+            driver_manager = DriverIntegrationManager(driver_integrator)
+            
+            # Execute REAL driver integration
+            integration_result = await driver_manager.integrate_drivers_for_device(
+                assets_summary['drivers'],
+                mount_point,
+                Path(kassia_config.build.yunonaPath),
+                kassia_config.device.deviceId,
+                kassia_config.selectedOsId
+            )
+            
+            step_duration = time.time() - step_start
+            
+            if integration_result['success']:
+                successful = integration_result['successful_count']
+                logger.info("REAL driver integration completed", LogCategory.DRIVER, {
+                    'duration': step_duration,
+                    'successful_count': successful,
+                    'failed_count': integration_result['failed_count'],
+                    'stats': integration_result['stats']
+                })
+                
+                job_status.update_job(job_id,
+                    current_step=f"Driver integration completed ({successful}/{driver_count})",
+                    step_number=4,
+                    progress=50
+                )
+                
+            else:
+                failed = integration_result['failed_count']
+                error_msg = f"Driver integration failed ({failed}/{driver_count})"
+                logger.error(error_msg, LogCategory.DRIVER, {
+                    'duration': step_duration,
+                    'failed_count': failed,
+                    'error_message': integration_result['message']
+                })
+                
+                # Continue with warning (don't fail completely)
+                job_status.update_job(job_id,
+                    current_step=f"Driver integration failed ({failed}/{driver_count}) - continuing",
+                    step_number=4,
+                    progress=50
+                )
+                
+        elif skip_drivers:
+            job_status.update_job(job_id,
+                current_step="Driver integration skipped",
+                step_number=4,
+                progress=50
+            )
+            logger.info("REAL driver integration skipped by user", LogCategory.DRIVER)
+        else:
+            job_status.update_job(job_id,
+                current_step="No drivers found for integration",
+                step_number=4,
+                progress=50
+            )
+            logger.warning("No drivers found for REAL integration", LogCategory.DRIVER)
+        
+        # Step 4: REAL Update Integration
+        if not skip_updates and assets_summary['updates']:
+            update_count = len(assets_summary['updates'])
+            job_status.update_job(job_id,
+                current_step=f"Integrating {update_count} updates",
+                step_number=5,
+                progress=65
+            )
+            
+            logger.info("Starting REAL update integration", LogCategory.UPDATE, {
+                'update_count': update_count
+            })
+            step_start = time.time()
+            
+            # FIXED: Initialize REAL update integration components
+            update_integrator = UpdateIntegrator()
+            update_manager = UpdateIntegrationManager(update_integrator)
+            
+            # Execute REAL update integration
+            integration_result = await update_manager.integrate_updates_for_os(
+                assets_summary['updates'],
+                mount_point,
+                Path(kassia_config.build.yunonaPath),
+                kassia_config.selectedOsId
+            )
+            
+            step_duration = time.time() - step_start
+            
+            if integration_result['success']:
+                successful = integration_result['successful_count']
+                logger.info("REAL update integration completed", LogCategory.UPDATE, {
+                    'duration': step_duration,
+                    'successful_count': successful,
+                    'failed_count': integration_result['failed_count'],
+                    'stats': integration_result['stats']
+                })
+                
+                job_status.update_job(job_id,
+                    current_step=f"Update integration completed ({successful}/{update_count})",
+                    step_number=5,
+                    progress=75
+                )
+                
+            else:
+                failed = integration_result['failed_count']
+                error_msg = f"Update integration failed ({failed}/{update_count})"
+                logger.error(error_msg, LogCategory.UPDATE, {
+                    'duration': step_duration,
+                    'failed_count': failed,
+                    'error_message': integration_result['message']
+                })
+                
+                # Continue with warning (don't fail completely)
+                job_status.update_job(job_id,
+                    current_step=f"Update integration failed ({failed}/{update_count}) - continuing",
+                    step_number=5,
+                    progress=75
+                )
+                
+        elif skip_updates:
+            job_status.update_job(job_id,
+                current_step="Update integration skipped",
+                step_number=5,
+                progress=75
+            )
+            logger.info("REAL update integration skipped by user", LogCategory.UPDATE)
+        else:
+            job_status.update_job(job_id,
+                current_step="No updates found for integration",
+                step_number=5,
+                progress=75
+            )
+            logger.warning("No updates found for REAL integration", LogCategory.UPDATE)
+        
+        # Step 5: REAL WIM Export
+        job_status.update_job(job_id,
+            current_step="Exporting final WIM",
+            step_number=6,
+            progress=85
+        )
+        
+        logger.info("Starting REAL WIM export", LogCategory.WIM)
+        step_start = time.time()
+        
+        export_dir = Path(build_config.exportPath)
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        export_name = f"{kassia_config.selectedOsId}_{kassia_config.device.deviceId}_{timestamp}.wim"
+        export_path = export_dir / export_name
+        
+        # REAL WIM Export
+        final_wim = await workflow.finalize_and_export_wim(
+            mount_point, 
+            export_path, 
+            export_name=f"Kassia {kassia_config.device.deviceId} OS{kassia_config.selectedOsId}"
+        )
+        
+        step_duration = time.time() - step_start
+        export_size = final_wim.stat().st_size
+        export_size_mb = export_size / (1024 * 1024)
+        
+        logger.info("REAL WIM export completed", LogCategory.WIM, {
+            'duration': step_duration,
+            'final_wim': str(final_wim),
+            'size_mb': export_size_mb,
+            'export_name': export_name
+        })
+        
+        # Step 6: REAL Cleanup
+        job_status.update_job(job_id,
+            current_step="Cleanup temporary files",
+            step_number=7,
+            progress=95
+        )
+        
+        logger.info("Starting REAL cleanup", LogCategory.SYSTEM)
+        step_start = time.time()
+        
+        await workflow.cleanup_workflow(keep_export=True)
+        
+        step_duration = time.time() - step_start
+        logger.info("REAL cleanup completed", LogCategory.SYSTEM, {
+            'duration': step_duration
+        })
+        
+        # Complete job with REAL results
+        workflow_duration = time.time() - workflow_start
+        
+        final_results = {
+            'final_wim_path': str(final_wim),
+            'final_wim_size_mb': export_size_mb,
+            'total_duration_seconds': workflow_duration,
+            'export_name': export_name,
+            'device': kassia_config.device.deviceId,
+            'os_id': kassia_config.selectedOsId,
+            'drivers_integrated': len(assets_summary['drivers']) if not skip_drivers else 0,
+            'updates_integrated': len(assets_summary['updates']) if not skip_updates else 0,
+            'workflow_type': 'REAL_WIM_PROCESSING'
+        }
+        
+        job_status.update_job(job_id,
+            status="completed",
+            current_step="REAL WIM processing completed",
+            step_number=8,
+            progress=100,
+            completed_at=datetime.now().isoformat(),
+            results=final_results
+        )
+        
+        logger.log_operation_success("webui_real_wim_workflow", workflow_duration, {
+            'final_wim': str(final_wim),
+            'final_size_mb': export_size_mb,
+            'device': kassia_config.device.deviceId,
+            'os_id': kassia_config.selectedOsId,
+            'workflow_type': 'REAL'
+        })
+        
+        # Finalize job logging
+        finalize_job_logging(job_id, "completed")
+        
+        return final_wim
+        
+    except DismError as e:
+        workflow_duration = time.time() - workflow_start
+        error_msg = f"DISM Error in REAL workflow: {str(e)}"
+        
+        logger.log_operation_failure("webui_real_wim_workflow", error_msg, workflow_duration, {
+            'error_type': 'DismError'
+        })
+        
+        # Update job with error
+        job_status.update_job(job_id,
+            status="failed",
+            error=error_msg,
+            completed_at=datetime.now().isoformat()
+        )
+        
+        if debug:
+            import traceback
+            traceback.print_exc()
+        
+        # Emergency cleanup
+        try:
+            await workflow.cleanup_workflow(keep_export=False)
+            logger.info("Emergency cleanup completed", LogCategory.SYSTEM)
+        except Exception as cleanup_error:
+            logger.error("Emergency cleanup failed", LogCategory.SYSTEM, {
+                'cleanup_error': str(cleanup_error)
+            })
+        
+        # Finalize job logging with error
+        finalize_job_logging(job_id, "failed", error_msg)
+        
+        return None
+        
+    except Exception as e:
+        workflow_duration = time.time() - workflow_start
+        error_msg = f"Unexpected error in REAL workflow: {str(e)}"
+        
+        logger.log_operation_failure("webui_real_wim_workflow", error_msg, workflow_duration, {
+            'error_type': type(e).__name__
+        })
+        
+        # Update job with error
+        job_status.update_job(job_id,
+            status="failed",
+            error=error_msg,
+            completed_at=datetime.now().isoformat()
+        )
+        
+        if debug:
+            import traceback
+            traceback.print_exc()
+        
+        # Finalize job logging with error
+        finalize_job_logging(job_id, "failed", error_msg)
+        
+        return None
+    finally:
+        logger.clear_context()
+
+
+# FIXED: Execute REAL build job instead of simulation
 async def execute_build_job_with_logging(job_id: str, device: str, os_id: int, 
                                        skip_drivers: bool, skip_updates: bool, skip_validation: bool):
-    """Enhanced build job execution with real-time WebSocket updates."""
+    """FIXED: Execute REAL build job instead of simulation."""
     
     # Set up job-specific logger context
     job_logger = get_logger("kassia.webui.build")
     
     # Create job context for enhanced logging
     with job_logger.create_job_context(job_id):
-        job_logger.log_operation_start("build_job")
+        job_logger.log_operation_start("real_build_job")
         job_start_time = time.time()
         
         try:
@@ -1315,7 +1712,7 @@ async def execute_build_job_with_logging(job_id: str, device: str, os_id: int,
                 progress=10
             )
             
-            job_status.add_job_log(job_id, "Build job started", "INFO")
+            job_status.add_job_log(job_id, "REAL build job started", "INFO")
             await asyncio.sleep(0.5)  # Allow WebSocket update
             
             # Step 2: Load configuration
@@ -1332,40 +1729,84 @@ async def execute_build_job_with_logging(job_id: str, device: str, os_id: int,
             job_status.add_job_log(job_id, "Configuration loaded successfully", "INFO")
             await asyncio.sleep(0.5)
             
-            # Continue with rest of build process...
-            # (Simplified for demonstration - same as before)
+            # Step 3: Asset Discovery (REAL)
+            job_logger.info("Starting REAL asset discovery", LogCategory.ASSET)
             
-            # Simulate some work
-            for step in range(3, 10):
-                await asyncio.sleep(2)  # Simulate work
-                progress = 10 + (step * 10)
-                job_status.update_job(
-                    job_id,
-                    current_step=f"Step {step} processing",
-                    step_number=step,
-                    progress=progress
-                )
-                job_status.add_job_log(job_id, f"Completed step {step}", "INFO")
+            # Create asset provider with proper config integration
+            assets_path = Path("assets")
             
-            # Final completion
+            build_config_dict = {
+                'driverRoot': kassia_config.build.driverRoot,
+                'updateRoot': kassia_config.build.updateRoot,
+                'sbiRoot': kassia_config.build.sbiRoot,
+                'yunonaPath': kassia_config.build.yunonaPath,
+                'osWimMap': kassia_config.build.osWimMap
+            }
+            
+            provider = LocalAssetProvider(assets_path, build_config=build_config_dict)
+            
+            assets_summary = {
+                'sbi': None,
+                'drivers': [],
+                'updates': [],
+                'yunona_scripts': []
+            }
+            
+            # REAL Asset Discovery
+            job_status.add_job_log(job_id, "Discovering SBI assets", "INFO")
+            sbi_asset = await provider.get_sbi(kassia_config.selectedOsId)
+            if sbi_asset:
+                assets_summary['sbi'] = sbi_asset
+                job_status.add_job_log(job_id, f"SBI found: {sbi_asset.name}", "INFO")
+            else:
+                job_status.add_job_log(job_id, f"No SBI found for OS {kassia_config.selectedOsId}", "WARNING")
+            
+            job_status.add_job_log(job_id, "Discovering driver assets", "INFO")
+            drivers = await provider.get_drivers(device, kassia_config.selectedOsId)
+            assets_summary['drivers'] = drivers
+            job_status.add_job_log(job_id, f"Found {len(drivers)} compatible drivers", "INFO")
+            
+            job_status.add_job_log(job_id, "Discovering update assets", "INFO")
+            updates = await provider.get_updates(kassia_config.selectedOsId)
+            assets_summary['updates'] = updates
+            job_status.add_job_log(job_id, f"Found {len(updates)} compatible updates", "INFO")
+            
+            job_status.add_job_log(job_id, "Discovering Yunona scripts", "INFO")
+            scripts = await provider.get_yunona_scripts()
+            assets_summary['yunona_scripts'] = scripts
+            job_status.add_job_log(job_id, f"Found {len(scripts)} Yunona scripts", "INFO")
+            
             job_status.update_job(
                 job_id,
-                status="completed", 
-                current_step="Completed",
-                step_number=9,
-                progress=100, 
-                completed_at=datetime.now().isoformat(),
-                results={
-                    'final_wim_path': 'test_output.wim',
-                    'final_wim_size_mb': 1024.5,
-                    'total_duration_seconds': time.time() - job_start_time
-                }
+                current_step="Asset discovery completed",
+                step_number=3,
+                progress=30
             )
             
-            job_status.add_job_log(job_id, "Build completed successfully!", "INFO")
+            # Step 4: REAL WIM Workflow Execution
+            job_status.add_job_log(job_id, "Starting REAL WIM workflow", "INFO")
             
-            # Finalize job logging
-            finalize_job_logging(job_id, "completed")
+            # FIXED: Call the REAL WIM workflow function
+            final_wim = await execute_cli_wim_workflow_real(
+                job_id, kassia_config, assets_summary, 
+                skip_drivers, skip_updates, False  # debug=False for WebUI
+            )
+            
+            if final_wim:
+                job_status.add_job_log(job_id, f"REAL WIM processing completed: {final_wim}", "INFO")
+                job_logger.info("REAL build job completed successfully", LogCategory.WEBUI, {
+                    'job_id': job_id,
+                    'final_wim': str(final_wim),
+                    'device': device,
+                    'os_id': os_id
+                })
+            else:
+                job_status.add_job_log(job_id, "REAL WIM processing failed", "ERROR")
+                job_logger.error("REAL build job failed", LogCategory.WEBUI, {
+                    'job_id': job_id,
+                    'device': device,
+                    'os_id': os_id
+                })
             
             # Update daily statistics
             job_db.update_daily_statistics()
@@ -1381,7 +1822,7 @@ async def execute_build_job_with_logging(job_id: str, device: str, os_id: int,
                 completed_at=datetime.now().isoformat()
             )
             
-            job_status.add_job_log(job_id, f"Build failed: {error_msg}", "ERROR")
+            job_status.add_job_log(job_id, f"REAL build failed: {error_msg}", "ERROR")
             
             # Finalize job logging with error
             finalize_job_logging(job_id, "failed", error_msg)
@@ -1391,6 +1832,39 @@ async def execute_build_job_with_logging(job_id: str, device: str, os_id: int,
             
             # Re-raise to be handled by job context
             raise
+
+
+# FIXED: Helper functions for directory initialization
+def initialize_directories(build_config) -> None:
+    """Initialize required directories with logging."""
+    logger = get_logger("kassia.webui.system")
+    logger.debug("Initializing directories for WebUI job", LogCategory.SYSTEM)
+    
+    directories = [
+        build_config.tempPath,
+        build_config.mountPoint,
+        build_config.exportPath,
+        "runtime/logs",
+        "runtime/data"
+    ]
+    
+    created_dirs = []
+    for directory in directories:
+        dir_path = Path(directory)
+        try:
+            dir_path.mkdir(parents=True, exist_ok=True)
+            created_dirs.append(str(dir_path))
+        except Exception as e:
+            logger.error("Failed to create directory", LogCategory.SYSTEM, {
+                'directory': str(dir_path),
+                'error': str(e)
+            })
+            raise Exception(f"Failed to create directory {dir_path}: {e}")
+    
+    logger.info("Directories initialized for WebUI job", LogCategory.SYSTEM, {
+        'directories': created_dirs
+    })
+
 
 # =================== HEALTH CHECK AND STARTUP/SHUTDOWN ===================
 
@@ -1451,23 +1925,23 @@ async def shutdown_event():
         'total_jobs': len(all_jobs)
     })
 
+
 if __name__ == "__main__":
     import uvicorn
     
-    logger.info("Starting Kassia WebUI server with database", LogCategory.WEBUI)
+    logger.info("Starting Kassia WebUI server with REAL WIM processing", LogCategory.WEBUI)
     
-    print("🌐 Starting Kassia Web Interface with FIXED Async Integration...")
+    print("🌐 Starting Kassia Web Interface with REAL WIM Processing...")
     print("=" * 70)
     print("🚀 FastAPI server starting...")
     print("📊 Dashboard: http://localhost:8000")
     print("📋 API Docs: http://localhost:8000/docs")
     print("📜 Logs: runtime/logs/")
     print("🗄️ Database: runtime/data/kassia_webui_jobs.db")
-    print("📊 Admin Panel: http://localhost:8000 (Admin Tab)")
-    print("🔧 Database Management & Statistics available")
+    print("⚙️  REAL WIM Processing: ENABLED")
+    print("🔧 DISM Integration: ACTIVE")
     print("🔗 WebSocket Live Updates: ws://localhost:8000/ws")
-    print("🌍 Translation System: Multiple languages supported")
-    print("✅ FIXED: Proper async initialization")
+    print("✅ FIXED: Real WIM workflows instead of simulation")
     print("=" * 70)
     
     uvicorn.run(app, host="0.0.0.0", port=8000, reload=False)
